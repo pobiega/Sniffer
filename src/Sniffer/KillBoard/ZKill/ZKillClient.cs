@@ -52,7 +52,7 @@ namespace Sniffer.KillBoard.ZKill
             {
                 return _jsonSerializer.Deserialize<ZKillRedisQResponse>(jsonReader);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Error(ex, "Exception when deserializing response object from ZKill RedisQ.");
                 return null;

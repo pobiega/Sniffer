@@ -73,5 +73,4 @@ namespace Sniffer.KillBoard.ZKill
         public string[] labels { get; set; }
         public string href { get; set; }
     }
-
 }

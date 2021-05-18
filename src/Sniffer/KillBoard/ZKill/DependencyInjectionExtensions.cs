@@ -10,7 +10,7 @@ namespace Sniffer.KillBoard.ZKill
 
             services.AddSingleton<IZKillClient, ZKillClient>();
             services.AddSingleton<IZKillProcessingService, ZKillProcessingService>();
-            
+
             services.AddHostedService<ZKillBackgroundService>();
         }
     }
