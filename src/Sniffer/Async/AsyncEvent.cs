@@ -56,7 +56,7 @@ namespace Sniffer.Async
 
             foreach (var callback in tmpInvocationList)
             {
-                //Assuming we want a serial invocation, for a parallel invocation we can use Task.WhenAll instead
+                // Assuming we want a serial invocation, for a parallel invocation we can use Task.WhenAll instead
                 await callback(sender, eventArgs);
             }
         }

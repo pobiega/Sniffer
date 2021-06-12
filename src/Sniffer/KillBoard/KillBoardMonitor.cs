@@ -37,7 +37,7 @@ namespace Sniffer.KillBoard
 
         private async Task OnPackageArrived(object sender, PackageArrivedEventArgs e)
         {
-            throw new System.NotImplementedException();
+
         }
 
         public bool TrySetChannelSettings(ISocketMessageChannel channel, int radius, string text, out Result<object> result)

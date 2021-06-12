@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace Sniffer.KillBoard.ZKill
 {
-
     public interface IZKillClient
     {
         Task<ZKillRedisQResponse> GetKillmail();
