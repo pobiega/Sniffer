@@ -10,12 +10,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
+		docker-compose.yml = docker-compose.yml
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sniffer.Tests", "tests\Sniffer.Tests\Sniffer.Tests.csproj", "{0D0D1F0C-C057-45FD-AFFA-3A133AB280A0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Tests", "tests\Sniffer.Tests\Sniffer.Tests.csproj", "{0D0D1F0C-C057-45FD-AFFA-3A133AB280A0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sniffer.Debugger", "src\Sniffer.Debugger\Sniffer.Debugger.csproj", "{D008606F-3D3D-4779-87D9-E347A4DE7438}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Debugger", "src\Sniffer.Debugger\Sniffer.Debugger.csproj", "{D008606F-3D3D-4779-87D9-E347A4DE7438}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
