@@ -1,27 +1,49 @@
-﻿using Sniffer.Data.ESI.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Serilog;
+using Sniffer.Data.Caching;
+using Sniffer.Data.ESI.Models;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 
 namespace Sniffer.Data
 {
-    public class ESIClient : CacheBase
-    {
-        private const string ESI_BASE_URL = "https://esi.evetech.net/latest";
 
-        public async Task<SystemData> GetSystemDataAsync(int systemId)
+    public class ESIClient : IESIClient
+    {
+        public ESIClient(
+            ILogger logger,
+            IHttpClientFactory httpClientFactory
+            )
         {
-            return await CachedHttpGetAsync<SystemData>($"{ESI_BASE_URL}/universe/systems/{systemId}/?datasource=tranquility&language=en", 180);
+            _logger = logger;
+            _httpClientFactory = httpClientFactory;
         }
-    }
 
-    public abstract class CacheBase
-    {
-        public async Task<T> CachedHttpGetAsync<T>(string url, int cacheTime)
+        private const string HTTP_CLIENT_NAME = "ESICLIENT";
+        private const string ESI_BASE_URL = "https://esi.evetech.net/latest";
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger _logger;
+
+        private async Task<TResponse> GetAsync<TResponse>(string requestUri)
         {
-            return await Task.FromResult(default(T));
+            var client = _httpClientFactory.CreateClient(HTTP_CLIENT_NAME);
+
+            var response = await client.GetAsync(requestUri).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.Error("ESI returned non-success code {statusCode} when requesting resource at {requestUri}", response.StatusCode, requestUri);
+                return default;
+            }
+
+            return await response.Content.ReadFromJsonAsync<TResponse>().ConfigureAwait(false);
+
+        }
+
+        public virtual Task<SystemData> GetSystemDataAsync(int systemId)
+        {
+            var requestUri = $"{ESI_BASE_URL}/universe/systems/{systemId}/?datasource=tranquility&language=en";
+            return GetAsync<SystemData>(requestUri);
         }
     }
 }

@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Sniffer.Persistance\Sniffer.Persistance.csproj" />
     <ProjectReference Include="..\Sniffer\Sniffer.csproj" />
   </ItemGroup>
 
