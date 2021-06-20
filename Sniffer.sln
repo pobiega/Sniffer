@@ -18,6 +18,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Tests", "tests\Snif
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Debugger", "src\Sniffer.Debugger\Sniffer.Debugger.csproj", "{D008606F-3D3D-4779-87D9-E347A4DE7438}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sniffer.Benchmarks", "Sniffer.Benchmarks\Sniffer.Benchmarks.csproj", "{A54852ED-3CE3-4B28-B24C-3FFD9BEBF799}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sniffer.Persistance", "Sniffer.Persistance\Sniffer.Persistance.csproj", "{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +40,14 @@ Global
 		{D008606F-3D3D-4779-87D9-E347A4DE7438}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D008606F-3D3D-4779-87D9-E347A4DE7438}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D008606F-3D3D-4779-87D9-E347A4DE7438}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A54852ED-3CE3-4B28-B24C-3FFD9BEBF799}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A54852ED-3CE3-4B28-B24C-3FFD9BEBF799}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A54852ED-3CE3-4B28-B24C-3FFD9BEBF799}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A54852ED-3CE3-4B28-B24C-3FFD9BEBF799}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
