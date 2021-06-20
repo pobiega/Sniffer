@@ -22,18 +22,22 @@ namespace Sniffer.Debugger
                 {
                     services.AddSingleton(Log.Logger);
 
-                    services.AddZKillService();
+                    //services.AddZKillService();
                 });
 
             var host = hostBuilder.Build();
-            var service = host.Services.GetRequiredService<IZKillProcessingService>();
+            //var service = host.Services.GetRequiredService<IZKillProcessingService>();
 
-            service.PackageArrived += async (s, e) =>
-            {
-                await Service_PackageArrived(s, e);
-            };
+            //service.PackageArrived += async (s, e) =>
+            //{
+            //    await Service_PackageArrived(s, e);
+            //};
 
-            await host.RunAsync();
+            //await host.RunAsync();
+
+            var client = new MongoDB.Driver.MongoClient("mongodb://localhost:27017");
+            var dataBase = client.GetDatabase("Sniffer");
+            var t = dataBase.GetCollection<>()
         }
 
         private static Task Service_PackageArrived(object sender, PackageArrivedEventArgs e)
