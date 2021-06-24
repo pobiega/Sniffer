@@ -19,21 +19,21 @@ namespace Sniffer.Tests.Data.Caching
         }
 
         [Fact]
-        public void GetOrCreate_ShouldCallFactoryMethod_WhenKeyDoesNotExist()
+        public async Task GetOrCreate_ShouldCallFactoryMethod_WhenKeyDoesNotExist()
         {
             //Arrange
             var key = "key_1";
             var factoryWasRun = false;
             var value = new object();
 
-            object Factory()
+            Task<object> Factory()
             {
                 factoryWasRun = true;
-                return value;
+                return Task.FromResult(value);
             }
 
             //Act
-            var actual = _subject.GetOrCreate(key, Factory);
+            var actual = await _subject.GetOrCreateAsync(key, Factory);
 
             //Assert
             factoryWasRun.Should().Be(true);
@@ -41,23 +41,23 @@ namespace Sniffer.Tests.Data.Caching
         }
 
         [Fact]
-        public void GetOrCreate_ShouldNotCallFactoryMethod_WhenKeyExists()
+        public async Task GetOrCreate_ShouldNotCallFactoryMethod_WhenKeyExists()
         {
             //Arrange
             var key = "key_1";
             var factoryWasRun = false;
             var value = new object();
 
-            _subject.GetOrCreate(key, () => value);
+             _subject.GetOrCreate(key, () => value);
 
-            object Factory()
+            Task<object> Factory()
             {
                 factoryWasRun = true;
-                return "";
+                return Task.FromResult((object)"");
             }
 
             //Act
-            var actual = _subject.GetOrCreate(key, Factory);
+            var actual = await _subject.GetOrCreateAsync(key, Factory);
 
             //Assert
             factoryWasRun.Should().Be(false);

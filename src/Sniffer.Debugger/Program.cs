@@ -35,9 +35,6 @@ namespace Sniffer.Debugger
 
             //await host.RunAsync();
 
-            var client = new MongoDB.Driver.MongoClient("mongodb://localhost:27017");
-            var dataBase = client.GetDatabase("Sniffer");
-            var t = dataBase.GetCollection<>()
         }
 
         private static Task Service_PackageArrived(object sender, PackageArrivedEventArgs e)

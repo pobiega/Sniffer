@@ -8,7 +8,21 @@ namespace Sniffer.Data.Caching
 {
     public class InMemoryCache : ICache
     {
-        Dictionary<string, object> _dict = new();
+        private readonly Dictionary<string, object> _dict = new();
+
+        public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory)
+        {
+            if (_dict.TryGetValue(key, out var value))
+            {
+                return (T)value;
+            }
+
+            var val = await factory();
+
+            _dict.Add(key, val);
+
+            return val;
+        }
 
         public T GetOrCreate<T>(string key, Func<T> factory)
         {
