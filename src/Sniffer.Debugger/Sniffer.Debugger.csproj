@@ -6,10 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MongoDB.Driver" Version="2.12.4" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\..\Sniffer.Persistance\Sniffer.Persistance.csproj" />
     <ProjectReference Include="..\Sniffer\Sniffer.csproj" />
   </ItemGroup>
 

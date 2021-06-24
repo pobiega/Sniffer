@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  pgsql:
+    image: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - "pgsqldata:/var/lib/postgresql/data" 
+    environment:
+      POSTGRES_PASSWORD: "aaaa"
+    restart: always
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+      - pgsql
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "user@domain.local"
+      PGADMIN_DEFAULT_PASSWORD: "aaaa"
+volumes:
+  pgsqldata:
