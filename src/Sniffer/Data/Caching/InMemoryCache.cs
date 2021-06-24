@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Sniffer.Data.Caching
@@ -10,7 +8,7 @@ namespace Sniffer.Data.Caching
     {
         private readonly Dictionary<string, object> _dict = new();
 
-        public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory)
+        public async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory) where T : class
         {
             if (_dict.TryGetValue(key, out var value))
             {
@@ -19,12 +17,15 @@ namespace Sniffer.Data.Caching
 
             var val = await factory();
 
-            _dict.Add(key, val);
+            if (val != default)
+            {
+                _dict.Add(key, val);
+            }
 
             return val;
         }
 
-        public T GetOrCreate<T>(string key, Func<T> factory)
+        public T GetOrCreate<T>(string key, Func<T> factory) where T : class
         {
             if (_dict.TryGetValue(key, out var value))
             {
@@ -33,7 +34,10 @@ namespace Sniffer.Data.Caching
 
             var val = factory();
 
-            _dict.Add(key, val);
+            if (val != default)
+            {
+                _dict.Add(key, val);
+            }
 
             return val;
         }

@@ -6,6 +6,10 @@ namespace Sniffer.Persistance
 {
     public class SnifferDbContext : DbContext
     {
+        public SnifferDbContext(DbContextOptions<SnifferDbContext> options) : base(options)
+        {
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<CacheEntry>()

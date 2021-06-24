@@ -105,7 +105,7 @@ csharp_preferred_modifier_order = public,private,protected,internal,static,exter
 
 # Code-block preferences
 csharp_prefer_braces = true
-csharp_prefer_simple_using_statement = true
+csharp_prefer_simple_using_statement =true:warning
 
 # Expression-level preferences
 csharp_prefer_simple_default_expression = true
@@ -120,7 +120,7 @@ csharp_style_unused_value_assignment_preference = discard_variable
 csharp_style_unused_value_expression_statement_preference = discard_variable
 
 # 'using' directive preferences
-csharp_using_directive_placement = outside_namespace
+csharp_using_directive_placement =outside_namespace:warning
 
 #### C# Formatting Rules ####
 
@@ -177,19 +177,19 @@ dotnet_naming_rule.interface_should_be_begins_with_i.severity = warning
 dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
 dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i
 
-dotnet_naming_rule.types_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.types_should_be_pascal_case.severity = warning
 dotnet_naming_rule.types_should_be_pascal_case.symbols = types
 dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
 
-dotnet_naming_rule.constants_should_be_uppercase_undercores.severity = suggestion
+dotnet_naming_rule.constants_should_be_uppercase_undercores.severity = warning
 dotnet_naming_rule.constants_should_be_uppercase_undercores.symbols = constants
 dotnet_naming_rule.constants_should_be_uppercase_undercores.style = uppercase_undercores
 
-dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = warning
 dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
 dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
 
-dotnet_naming_rule.private_or_internal_field_should_be_underscored_camelcase.severity = suggestion
+dotnet_naming_rule.private_or_internal_field_should_be_underscored_camelcase.severity = warning
 dotnet_naming_rule.private_or_internal_field_should_be_underscored_camelcase.symbols = private_or_internal_field
 dotnet_naming_rule.private_or_internal_field_should_be_underscored_camelcase.style = underscored_camelcase
 
@@ -236,3 +236,5 @@ dotnet_naming_style.uppercase_undercores.required_prefix =
 dotnet_naming_style.uppercase_undercores.required_suffix = 
 dotnet_naming_style.uppercase_undercores.word_separator = _
 dotnet_naming_style.uppercase_undercores.capitalization = all_upper
+
+dotnet_diagnostic.IDE0005.severity = warning

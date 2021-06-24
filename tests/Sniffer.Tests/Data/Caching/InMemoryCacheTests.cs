@@ -1,9 +1,5 @@
 ﻿using FluentAssertions;
 using Sniffer.Data.Caching;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -48,7 +44,7 @@ namespace Sniffer.Tests.Data.Caching
             var factoryWasRun = false;
             var value = new object();
 
-             _subject.GetOrCreate(key, () => value);
+            _subject.GetOrCreate(key, () => value);
 
             Task<object> Factory()
             {

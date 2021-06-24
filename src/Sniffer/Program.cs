@@ -1,10 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Sniffer.Bot;
 using Sniffer.KillBoard;
 using Sniffer.KillBoard.ZKill;
+using Sniffer.Persistance;
 using System.Threading.Tasks;
 
 namespace Sniffer
@@ -23,6 +25,11 @@ namespace Sniffer
             services.AddSingleton(Log.Logger);
 
             services.Configure<KillBoardMonitorSettings>(Configuration.GetSection(nameof(KillBoardMonitorSettings)));
+
+            var connectionString = Configuration.GetConnectionString("Database");
+
+            services.AddSnifferDatabase(connectionString);
+
             services.AddSingleton<KillBoardMonitor>();
 
             services.AddZKillService();
@@ -36,9 +43,10 @@ namespace Sniffer
         public static IHostBuilder CreateHostBuilder()
         {
             return new HostBuilder()
-                .ConfigureAppConfiguration(config =>
+                .ConfigureAppConfiguration((hostBuilderContext, config) =>
                 {
                     config.AddJsonFile("appsettings.json");
+                    config.AddJsonFile($"appsettings.{hostBuilderContext.HostingEnvironment.EnvironmentName}.json");
                     config.AddEnvironmentVariables();
                 })
                 .ConfigureLogging(logging =>
@@ -62,7 +70,7 @@ namespace Sniffer
         public static async Task Main(string[] args)
         {
             var host = CreateHostBuilder();
-            await host.RunConsoleAsync();
+            await host.RunConsoleAsync().ConfigureAwait(false);
         }
     }
 }
