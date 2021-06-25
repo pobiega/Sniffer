@@ -27,7 +27,6 @@ namespace Sniffer
             services.Configure<KillBoardMonitorSettings>(Configuration.GetSection(nameof(KillBoardMonitorSettings)));
 
             var connectionString = Configuration.GetConnectionString("Database");
-
             services.AddSnifferDatabase(connectionString);
 
             services.AddSingleton<KillBoardMonitor>();
@@ -40,14 +39,12 @@ namespace Sniffer
 
     public static class Program
     {
-        public static IHostBuilder CreateHostBuilder()
+        public static IHostBuilder CreateHostBuilder(string[] args)
         {
-            return new HostBuilder()
-                .ConfigureAppConfiguration((hostBuilderContext, config) =>
+            return Host.CreateDefaultBuilder(args)
+                .ConfigureHostConfiguration(host =>
                 {
-                    config.AddJsonFile("appsettings.json");
-                    config.AddJsonFile($"appsettings.{hostBuilderContext.HostingEnvironment.EnvironmentName}.json");
-                    config.AddEnvironmentVariables();
+                    host.AddJsonFile("hostsettings.json", optional: true);
                 })
                 .ConfigureLogging(logging =>
                 {
@@ -69,7 +66,7 @@ namespace Sniffer
 
         public static async Task Main(string[] args)
         {
-            var host = CreateHostBuilder();
+            var host = CreateHostBuilder(args);
             await host.RunConsoleAsync().ConfigureAwait(false);
         }
     }
