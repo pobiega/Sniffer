@@ -238,3 +238,6 @@ dotnet_naming_style.uppercase_undercores.word_separator = _
 dotnet_naming_style.uppercase_undercores.capitalization = all_upper
 
 dotnet_diagnostic.IDE0005.severity = warning
+[*.{cs,vb}]
+dotnet_diagnostic.CA2007.severity=silent
+dotnet_diagnostic.CA2225.severity=silent

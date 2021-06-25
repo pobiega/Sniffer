@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Sniffer.KillBoard.ZKill
 {
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
     public record PackageArrivedEventArgs(Package Package);
+#pragma warning restore CA1711 // Identifiers should not have incorrect suffix
 
     public interface IZKillProcessingService
     {

@@ -7,8 +7,11 @@ using Sniffer.Bot;
 using Sniffer.KillBoard;
 using Sniffer.KillBoard.ZKill;
 using Sniffer.Persistance;
+using System;
 using System.Threading.Tasks;
 
+// False because of Discord.NET, try changing to true after we swap to remora
+[assembly: CLSCompliant(false)]
 namespace Sniffer
 {
     public class Startup

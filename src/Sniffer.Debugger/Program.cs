@@ -33,7 +33,7 @@ namespace Sniffer.Debugger
             //    await Service_PackageArrived(s, e);
             //};
 
-            //await host.RunAsync();
+            await host.RunAsync();
 
         }
 
