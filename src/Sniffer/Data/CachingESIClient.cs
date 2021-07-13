@@ -1,6 +1,7 @@
 ﻿using Serilog;
 using Sniffer.Data.Caching;
 using Sniffer.Data.ESI.Models;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -24,6 +25,43 @@ namespace Sniffer.Data
             return await _cache.GetOrCreate(
                 GetKey(nameof(SystemData), systemId),
                 () => base.GetSystemDataAsync(systemId))
+                .ConfigureAwait(false);
+        }
+
+        public override async Task<AllianceData> GetAllianceDataAsync(int allianceId)
+        {
+            return await _cache.GetOrCreate(
+                GetKey(nameof(AllianceData), allianceId),
+                () => base.GetAllianceDataAsync(allianceId))
+                .ConfigureAwait(false);
+        }
+
+        public override async Task<CorporationData> GetCorporationDataAsync(int corpId)
+        {
+            return await _cache.GetOrCreate(
+                GetKey(nameof(CorporationData)),
+                () => base.GetCorporationDataAsync(corpId))
+                .ConfigureAwait(false);
+        }
+
+        public override async Task<CharacterData> GetCharacterDataAsync(int characterId)
+        {
+            return await _cache.GetOrCreate(
+                GetKey(nameof(CharacterData), characterId),
+                () => base.GetCharacterDataAsync(characterId))
+                .ConfigureAwait(false);
+        }
+
+        public override async Task<List<int>> GetRouteDataAsync(int originSystemId, int destinationSystemId)
+        {
+            if (destinationSystemId < originSystemId)
+            {
+                (destinationSystemId, originSystemId) = (originSystemId, destinationSystemId);
+            }
+
+            return await _cache.GetOrCreate(
+                GetKey("Route", originSystemId, destinationSystemId),
+                () => base.GetRouteDataAsync(originSystemId, destinationSystemId))
                 .ConfigureAwait(false);
         }
 

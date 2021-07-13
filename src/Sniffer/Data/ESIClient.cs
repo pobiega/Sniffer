@@ -1,6 +1,7 @@
 ﻿using Serilog;
 using Sniffer.Data.ESI.Models;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
@@ -43,5 +44,32 @@ namespace Sniffer.Data
             var requestUri = new Uri($"{ESI_BASE_URL}/universe/systems/{systemId}/?datasource=tranquility&language=en");
             return GetAsync<SystemData>(requestUri);
         }
+
+        public virtual Task<AllianceData> GetAllianceDataAsync(int allianceId)
+        {
+            var requestUri = new Uri($"{ESI_BASE_URL}/alliances/{allianceId}/?datasource=tranquility&language=en");
+            return GetAsync<AllianceData>(requestUri);
+        }
+
+        public virtual Task<CorporationData> GetCorporationDataAsync(int corpId)
+        {
+            var requestUri = new Uri($"{ESI_BASE_URL}/corporations/{corpId}/?datasource=tranquility&language=en");
+            return GetAsync<CorporationData>(requestUri);
+        }
+
+        public virtual Task<CharacterData> GetCharacterDataAsync(int characterId)
+        {
+            var requestUri = new Uri($"{ESI_BASE_URL}/characters/{characterId}/?datasource=tranquility&language=en");
+            return GetAsync<CharacterData>(requestUri);
+        }
+
+        public virtual Task<List<int>> GetRouteDataAsync(int originSystemId, int destinationSystemId)
+        {
+            var requestUri = new Uri($"{ESI_BASE_URL}/route/{originSystemId}/{destinationSystemId}/?datasource=tranquility&language=en");
+            return GetAsync<List<int>>(requestUri);
+        }
+
+
+
     }
 }

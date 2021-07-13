@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Sniffer.Bot;
+using Sniffer.Data;
 using Sniffer.KillBoard;
 using Sniffer.KillBoard.ZKill;
 using Sniffer.Persistance;
@@ -33,6 +34,9 @@ namespace Sniffer
             services.AddSnifferDatabase(connectionString);
 
             services.AddSingleton<KillBoardMonitor>();
+
+            services.AddHttpClient();
+            services.AddSingleton<IESIClient, CachingESIClient>();
 
             services.AddZKillService();
             services.AddDiscordBot();
