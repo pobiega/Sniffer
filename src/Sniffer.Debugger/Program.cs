@@ -3,6 +3,8 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Sniffer.Data;
 using Sniffer.KillBoard.ZKill;
+using Sniffer.Static;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -60,17 +62,16 @@ namespace Sniffer.Debugger
             _esiClient = esiClient;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            
-            var allianceData = await _esiClient.GetAllianceDataAsync(1354830081);
+            EveStaticDataProvider.Initialize();
 
-            var characterData = await _esiClient.GetCharacterDataAsync(1188237852);
+            if (EveStaticDataProvider.Instance.SystemIds.TryGetValue(30000142, out var systemName))
+            {
+                Console.WriteLine(systemName);
+            }
 
-            var corpData = await _esiClient.GetCorporationDataAsync(98127387);
-
-            var routeData = await _esiClient.GetRouteDataAsync(30000001, 30000002);
-
+            return Task.CompletedTask;
         }
     }
 }

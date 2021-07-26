@@ -20,6 +20,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Debugger", "src\Sni
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Persistance", "Sniffer.Persistance\Sniffer.Persistance.csproj", "{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sniffer.Static", "Sniffer.Static\Sniffer.Static.csproj", "{F2BFA9C4-ED4F-4316-99C3-64339D3630EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +44,10 @@ Global
 		{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2BFA9C4-ED4F-4316-99C3-64339D3630EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2BFA9C4-ED4F-4316-99C3-64339D3630EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2BFA9C4-ED4F-4316-99C3-64339D3630EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2BFA9C4-ED4F-4316-99C3-64339D3630EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

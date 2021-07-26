@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+using Sniffer.Persistance.Entities;
 
 namespace Sniffer.Persistance
 {
@@ -23,13 +23,6 @@ namespace Sniffer.Persistance
         }
 
         public DbSet<CacheEntry> CacheEntries { get; set; }
-    }
-
-    public class CacheEntry
-    {
-        [Key]
-        public string Key { get; set; }
-
-        public string Content { get; set; }
+        public DbSet<ChannelConfiguration> ChannelConfigurations { get; set; }
     }
 }

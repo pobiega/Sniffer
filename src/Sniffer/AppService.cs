@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Sniffer.Bot;
 using Sniffer.KillBoard;
+using Sniffer.Static;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,6 +21,8 @@ namespace Sniffer
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await _killBoardMonitor.Initialize();
+
+            EveStaticDataProvider.Initialize();
 
             await _discordBot.StartAsync(cancellationToken);
         }

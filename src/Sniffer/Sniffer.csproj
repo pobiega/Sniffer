@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Sniffer.Persistance\Sniffer.Persistance.csproj" />
+    <ProjectReference Include="..\..\Sniffer.Static\Sniffer.Static.csproj" />
   </ItemGroup>
 
   <ItemGroup>
