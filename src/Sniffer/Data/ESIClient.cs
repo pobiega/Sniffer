@@ -1,13 +1,13 @@
 ﻿using Serilog;
-using Sniffer.Data.Caching;
 using Sniffer.Data.ESI.Models;
+using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 
 namespace Sniffer.Data
 {
-
     public class ESIClient : IESIClient
     {
         public ESIClient(
@@ -24,7 +24,7 @@ namespace Sniffer.Data
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger _logger;
 
-        private async Task<TResponse> GetAsync<TResponse>(string requestUri)
+        private async Task<TResponse> GetAsync<TResponse>(Uri requestUri)
         {
             var client = _httpClientFactory.CreateClient(HTTP_CLIENT_NAME);
 
@@ -37,13 +37,39 @@ namespace Sniffer.Data
             }
 
             return await response.Content.ReadFromJsonAsync<TResponse>().ConfigureAwait(false);
-
         }
 
         public virtual Task<SystemData> GetSystemDataAsync(int systemId)
         {
-            var requestUri = $"{ESI_BASE_URL}/universe/systems/{systemId}/?datasource=tranquility&language=en";
+            var requestUri = new Uri($"{ESI_BASE_URL}/universe/systems/{systemId}/?datasource=tranquility&language=en");
             return GetAsync<SystemData>(requestUri);
         }
+
+        public virtual Task<AllianceData> GetAllianceDataAsync(int allianceId)
+        {
+            var requestUri = new Uri($"{ESI_BASE_URL}/alliances/{allianceId}/?datasource=tranquility&language=en");
+            return GetAsync<AllianceData>(requestUri);
+        }
+
+        public virtual Task<CorporationData> GetCorporationDataAsync(int corpId)
+        {
+            var requestUri = new Uri($"{ESI_BASE_URL}/corporations/{corpId}/?datasource=tranquility&language=en");
+            return GetAsync<CorporationData>(requestUri);
+        }
+
+        public virtual Task<CharacterData> GetCharacterDataAsync(int characterId)
+        {
+            var requestUri = new Uri($"{ESI_BASE_URL}/characters/{characterId}/?datasource=tranquility&language=en");
+            return GetAsync<CharacterData>(requestUri);
+        }
+
+        public virtual Task<List<int>> GetRouteDataAsync(int originSystemId, int destinationSystemId)
+        {
+            var requestUri = new Uri($"{ESI_BASE_URL}/route/{originSystemId}/{destinationSystemId}/?datasource=tranquility&language=en");
+            return GetAsync<List<int>>(requestUri);
+        }
+
+
+
     }
 }

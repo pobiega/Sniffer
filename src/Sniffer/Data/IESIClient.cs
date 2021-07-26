@@ -1,8 +1,5 @@
-﻿using Serilog;
-using Sniffer.Data.Caching;
-using Sniffer.Data.ESI.Models;
-using System.Net.Http;
-using System.Net.Http.Json;
+﻿using Sniffer.Data.ESI.Models;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Sniffer.Data
@@ -10,6 +7,10 @@ namespace Sniffer.Data
 
     public interface IESIClient
     {
+        Task<AllianceData> GetAllianceDataAsync(int allianceId);
+        Task<CharacterData> GetCharacterDataAsync(int characterId);
+        Task<CorporationData> GetCorporationDataAsync(int corpId);
+        Task<List<int>> GetRouteDataAsync(int originSystemId, int destinationSystemId);
         Task<SystemData> GetSystemDataAsync(int systemId);
     }
 }

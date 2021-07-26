@@ -59,7 +59,7 @@ namespace Sniffer.KillBoard
                 return false;
             }
 
-            return textChannel.Name.StartsWith(_settings.Value.ChannelPrefix);
+            return textChannel.Name.StartsWith(_settings.Value.ChannelPrefix, System.StringComparison.OrdinalIgnoreCase);
         }
     }
 }

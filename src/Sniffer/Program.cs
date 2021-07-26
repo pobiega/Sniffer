@@ -1,12 +1,18 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Sniffer.Bot;
+using Sniffer.Data;
 using Sniffer.KillBoard;
 using Sniffer.KillBoard.ZKill;
+using Sniffer.Persistance;
+using System;
 using System.Threading.Tasks;
 
+// False because of Discord.NET, try changing to true after we swap to remora
+[assembly: CLSCompliant(false)]
 namespace Sniffer
 {
     public class Startup
@@ -23,7 +29,14 @@ namespace Sniffer
             services.AddSingleton(Log.Logger);
 
             services.Configure<KillBoardMonitorSettings>(Configuration.GetSection(nameof(KillBoardMonitorSettings)));
+
+            var connectionString = Configuration.GetConnectionString("Database");
+            services.AddSnifferDatabase(connectionString);
+
             services.AddSingleton<KillBoardMonitor>();
+
+            services.AddHttpClient();
+            services.AddSingleton<IESIClient, CachingESIClient>();
 
             services.AddZKillService();
             services.AddDiscordBot();
@@ -33,13 +46,12 @@ namespace Sniffer
 
     public static class Program
     {
-        public static IHostBuilder CreateHostBuilder()
+        public static IHostBuilder CreateHostBuilder(string[] args)
         {
-            return new HostBuilder()
-                .ConfigureAppConfiguration(config =>
+            return Host.CreateDefaultBuilder(args)
+                .ConfigureHostConfiguration(host =>
                 {
-                    config.AddJsonFile("appsettings.json");
-                    config.AddEnvironmentVariables();
+                    host.AddJsonFile("hostsettings.json", optional: true);
                 })
                 .ConfigureLogging(logging =>
                 {
@@ -61,8 +73,8 @@ namespace Sniffer
 
         public static async Task Main(string[] args)
         {
-            var host = CreateHostBuilder();
-            await host.RunConsoleAsync();
+            var host = CreateHostBuilder(args);
+            await host.RunConsoleAsync().ConfigureAwait(false);
         }
     }
 }
