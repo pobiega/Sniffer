@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Sniffer.Bot;
 using Sniffer.Data;
+using Sniffer.Data.Caching;
 using Sniffer.KillBoard;
 using Sniffer.KillBoard.ZKill;
 using Sniffer.Persistance;
@@ -36,6 +37,7 @@ namespace Sniffer
             services.AddSingleton<KillBoardMonitor>();
 
             services.AddHttpClient();
+            services.AddSingleton<ICache, DatabaseCache>();
             services.AddSingleton<IESIClient, CachingESIClient>();
 
             services.AddZKillService();

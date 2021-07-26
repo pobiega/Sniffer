@@ -68,8 +68,5 @@ namespace Sniffer.Data
             var requestUri = new Uri($"{ESI_BASE_URL}/route/{originSystemId}/{destinationSystemId}/?datasource=tranquility&language=en");
             return GetAsync<List<int>>(requestUri);
         }
-
-
-
     }
 }

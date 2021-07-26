@@ -48,10 +48,12 @@ namespace Sniffer.KillBoard
 
         private MonitorSettings LoadSettingsFromDatabase()
         {
-            var context = _serviceProvider.GetService<SnifferDbContext>();
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetService<SnifferDbContext>();
+
             var settings = new MonitorSettings();
 
-            foreach (var item in context.ChannelConfigurations)
+            foreach (var item in dbContext.ChannelConfigurations)
             {
                 settings.Add(item.DiscordChannelId, item.Radius, item.SystemId);
             }
@@ -90,13 +92,14 @@ namespace Sniffer.KillBoard
 
         private void SetChannelSettings(ulong id, int radius, int systemId)
         {
-            var context = _serviceProvider.GetService<SnifferDbContext>();
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetService<SnifferDbContext>();
 
-            var existing = context.ChannelConfigurations.Find(id);
+            var existing = dbContext.ChannelConfigurations.Find(id);
 
             if (existing == null)
             {
-                context.ChannelConfigurations.Add(new Persistance.Entities.ChannelConfiguration()
+                dbContext.ChannelConfigurations.Add(new Persistance.Entities.ChannelConfiguration()
                 {
                     DiscordChannelId = id,
                     Radius = radius,
@@ -110,7 +113,7 @@ namespace Sniffer.KillBoard
             }
 
             // TODO: if this fails, we should let the user know
-            context.SaveChanges();
+            dbContext.SaveChanges();
 
             _monitorSettings.Add(id, radius, systemId);
         }
