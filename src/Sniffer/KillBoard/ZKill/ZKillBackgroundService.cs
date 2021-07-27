@@ -31,6 +31,12 @@ namespace Sniffer.KillBoard.ZKill
 
         public async Task ExecuteAsync()
         {
+            if (PackageArrived == null)
+            {
+                await Task.Delay(1000);
+                return;
+            }
+
             var response = await _zKillClient.GetKillmail();
 
             if (response?.package == null)
@@ -42,7 +48,7 @@ namespace Sniffer.KillBoard.ZKill
                 return;
             }
 
-            await (PackageArrived?.InvokeAsyncParallel(this, new PackageArrivedEventArgs(response.package)) ?? Task.CompletedTask);
+            await (PackageArrived.InvokeAsyncSerial(this, new PackageArrivedEventArgs(response.package)) ?? Task.CompletedTask);
         }
     }
 

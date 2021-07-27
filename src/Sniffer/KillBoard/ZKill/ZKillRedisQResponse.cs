@@ -29,6 +29,7 @@ namespace Sniffer.KillBoard.ZKill
 
     public class Victim
     {
+        public int alliance_id { get; set; }
         public int character_id { get; set; }
         public int corporation_id { get; set; }
         public int damage_taken { get; set; }
@@ -55,6 +56,7 @@ namespace Sniffer.KillBoard.ZKill
 
     public class Attacker
     {
+        public int alliance_id { get; set; }
         public int character_id { get; set; }
         public int corporation_id { get; set; }
         public int damage_done { get; set; }

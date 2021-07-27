@@ -22,34 +22,30 @@ namespace Sniffer.Data
 
         public override async Task<SystemData> GetSystemDataAsync(int systemId)
         {
-            return await _cache.GetOrCreate(
+            return await _cache.GetOrCreateAsync(
                 GetKey(nameof(SystemData), systemId),
-                () => base.GetSystemDataAsync(systemId))
-                .ConfigureAwait(false);
+                () => base.GetSystemDataAsync(systemId));
         }
 
         public override async Task<AllianceData> GetAllianceDataAsync(int allianceId)
         {
-            return await _cache.GetOrCreate(
+            return await _cache.GetOrCreateAsync(
                 GetKey(nameof(AllianceData), allianceId),
-                () => base.GetAllianceDataAsync(allianceId))
-                .ConfigureAwait(false);
+                () => base.GetAllianceDataAsync(allianceId));
         }
 
         public override async Task<CorporationData> GetCorporationDataAsync(int corpId)
         {
-            return await _cache.GetOrCreate(
+            return await _cache.GetOrCreateAsync(
                 GetKey(nameof(CorporationData)),
-                () => base.GetCorporationDataAsync(corpId))
-                .ConfigureAwait(false);
+                () => base.GetCorporationDataAsync(corpId));
         }
 
         public override async Task<CharacterData> GetCharacterDataAsync(int characterId)
         {
-            return await _cache.GetOrCreate(
+            return await _cache.GetOrCreateAsync(
                 GetKey(nameof(CharacterData), characterId),
-                () => base.GetCharacterDataAsync(characterId))
-                .ConfigureAwait(false);
+                () => base.GetCharacterDataAsync(characterId));
         }
 
         public override async Task<List<int>> GetRouteDataAsync(int originSystemId, int destinationSystemId)
@@ -59,10 +55,9 @@ namespace Sniffer.Data
                 (destinationSystemId, originSystemId) = (originSystemId, destinationSystemId);
             }
 
-            return await _cache.GetOrCreate(
+            return await _cache.GetOrCreateAsync(
                 GetKey("Route", originSystemId, destinationSystemId),
-                () => base.GetRouteDataAsync(originSystemId, destinationSystemId))
-                .ConfigureAwait(false);
+                () => base.GetRouteDataAsync(originSystemId, destinationSystemId));
         }
 
         private static string GetKey(params object[] parts)

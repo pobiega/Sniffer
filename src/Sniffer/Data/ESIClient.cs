@@ -41,24 +41,44 @@ namespace Sniffer.Data
 
         public virtual Task<SystemData> GetSystemDataAsync(int systemId)
         {
+            if (systemId == default)
+            {
+                return Task.FromResult<SystemData>(null);
+            }
+
             var requestUri = new Uri($"{ESI_BASE_URL}/universe/systems/{systemId}/?datasource=tranquility&language=en");
             return GetAsync<SystemData>(requestUri);
         }
 
         public virtual Task<AllianceData> GetAllianceDataAsync(int allianceId)
         {
+            if (allianceId == default)
+            {
+                return Task.FromResult<AllianceData>(null);
+            }
+
             var requestUri = new Uri($"{ESI_BASE_URL}/alliances/{allianceId}/?datasource=tranquility&language=en");
             return GetAsync<AllianceData>(requestUri);
         }
 
         public virtual Task<CorporationData> GetCorporationDataAsync(int corpId)
         {
+            if (corpId == default)
+            {
+                return Task.FromResult<CorporationData>(null);
+            }
+
             var requestUri = new Uri($"{ESI_BASE_URL}/corporations/{corpId}/?datasource=tranquility&language=en");
             return GetAsync<CorporationData>(requestUri);
         }
 
         public virtual Task<CharacterData> GetCharacterDataAsync(int characterId)
         {
+            if (characterId == default)
+            {
+                return Task.FromResult<CharacterData>(null);
+            }
+
             var requestUri = new Uri($"{ESI_BASE_URL}/characters/{characterId}/?datasource=tranquility&language=en");
             return GetAsync<CharacterData>(requestUri);
         }

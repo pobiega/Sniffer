@@ -30,9 +30,12 @@ namespace Sniffer
             services.AddSingleton(Log.Logger);
 
             services.Configure<KillBoardMonitorSettings>(Configuration.GetSection(nameof(KillBoardMonitorSettings)));
+            services.Configure<DatabaseSettings>(Configuration.GetSection(nameof(DatabaseSettings)));
+
+            var databaseSettings = Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>();
 
             var connectionString = Configuration.GetConnectionString("Database");
-            services.AddSnifferDatabase(connectionString);
+            services.AddSnifferDatabase(databaseSettings, connectionString);
 
             services.AddSingleton<KillBoardMonitor>();
 
@@ -60,7 +63,7 @@ namespace Sniffer
                     logging.AddSerilog();
 
                     var loggerConfiguration = new LoggerConfiguration()
-                        .MinimumLevel.Verbose()
+                        .MinimumLevel.Debug()
                         .Enrich.FromLogContext()
                         .WriteTo.Console();
 

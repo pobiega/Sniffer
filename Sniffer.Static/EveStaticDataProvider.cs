@@ -94,18 +94,20 @@ namespace Sniffer.Static
             return dict.ToImmutableDictionary();
         }
 
-        public bool TryGetSystemIdByName(string systemName, out int systemId)
+        public bool TryGetSystemIdByName(string systemName, out int systemId, out string actualSystemName)
         {
             foreach (var item in SystemIds)
             {
                 if (item.Value.Equals(systemName, StringComparison.OrdinalIgnoreCase))
                 {
                     systemId = item.Key;
+                    actualSystemName = item.Value;
                     return true;
                 }
             }
 
             systemId = default;
+            actualSystemName = default;
             return false;
         }
     }

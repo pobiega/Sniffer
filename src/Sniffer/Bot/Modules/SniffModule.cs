@@ -20,21 +20,21 @@ namespace Sniffer.Bot.Modules
         {
             if (!_killBoardMonitor.TrySetChannelSettings(Context.Channel, radius, text, out var result))
             {
-                await ReplyAsync($"Unable to set channel settings: {result.ErrorReason}");
+                await ReplyAsync($"Unable to set channel settings: {result.ErrorMessage}");
                 return;
             }
 
-            await Announcewatch(Context.Channel, radius, text);
+            await Announcewatch(Context.Channel, radius, result.Value);
         }
 
-        private async Task Announcewatch(ISocketMessageChannel channel, int radius, string text)
+        private async Task Announcewatch(ISocketMessageChannel channel, int radius, string systemName)
         {
             if (channel is ITextChannel textChannel)
             {
-                await textChannel.ModifyAsync(c => c.Topic = $"Currently watching: {radius} jumps from {text}");
+                await textChannel.ModifyAsync(c => c.Topic = $"Currently watching: {radius} jumps from {systemName}");
             }
 
-            await ReplyAsync($"Setting watch to {radius} jumps from {text}");
+            await ReplyAsync($"Setting watch to {radius} jumps from {systemName}");
         }
     }
 }
