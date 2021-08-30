@@ -66,9 +66,9 @@ namespace Sniffer.Debugger
         {
             EveStaticDataProvider.Initialize();
 
-            if (EveStaticDataProvider.Instance.SystemIds.TryGetValue(30000142, out var systemName))
+            if (EveStaticDataProvider.Instance.ShipIds.TryGetValue(22440, out var ship))
             {
-                Console.WriteLine(systemName);
+                Console.WriteLine(ship.EnglishName);
             }
 
             return Task.CompletedTask;

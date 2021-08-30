@@ -9,5 +9,6 @@ namespace Sniffer.Data.ESI.Models
 
         [JsonProperty("ticker")]
         public string Ticker { get; set; }
+        public int Id { get; set; }
     }
 }

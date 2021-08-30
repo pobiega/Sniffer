@@ -50,37 +50,49 @@ namespace Sniffer.Data
             return GetAsync<SystemData>(requestUri);
         }
 
-        public virtual Task<AllianceData> GetAllianceDataAsync(int allianceId)
+        public virtual async Task<AllianceData> GetAllianceDataAsync(int allianceId)
         {
             if (allianceId == default)
             {
-                return Task.FromResult<AllianceData>(null);
+                return null;
             }
 
             var requestUri = new Uri($"{ESI_BASE_URL}/alliances/{allianceId}/?datasource=tranquility&language=en");
-            return GetAsync<AllianceData>(requestUri);
+
+            var response = await GetAsync<AllianceData>(requestUri);
+            response.Id = allianceId;
+
+            return response;
         }
 
-        public virtual Task<CorporationData> GetCorporationDataAsync(int corpId)
+        public virtual async Task<CorporationData> GetCorporationDataAsync(int corpId)
         {
             if (corpId == default)
             {
-                return Task.FromResult<CorporationData>(null);
+                return null;
             }
 
             var requestUri = new Uri($"{ESI_BASE_URL}/corporations/{corpId}/?datasource=tranquility&language=en");
-            return GetAsync<CorporationData>(requestUri);
+
+            var response = await GetAsync<CorporationData>(requestUri);
+            response.Id = corpId;
+
+            return response;
         }
 
-        public virtual Task<CharacterData> GetCharacterDataAsync(int characterId)
+        public virtual async Task<CharacterData> GetCharacterDataAsync(int characterId)
         {
             if (characterId == default)
             {
-                return Task.FromResult<CharacterData>(null);
+                return null;
             }
 
             var requestUri = new Uri($"{ESI_BASE_URL}/characters/{characterId}/?datasource=tranquility&language=en");
-            return GetAsync<CharacterData>(requestUri);
+
+            var response = await GetAsync<CharacterData>(requestUri);
+            response.Id = characterId;
+
+            return response;
         }
 
         public virtual Task<List<int>> GetRouteDataAsync(int originSystemId, int destinationSystemId)

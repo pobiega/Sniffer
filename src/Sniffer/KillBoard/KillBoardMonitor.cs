@@ -12,6 +12,7 @@ using Sniffer.Data;
 using System.Text;
 using Sniffer.Data.ESI.Models;
 using System.Collections.Generic;
+using Sniffer.Static.Models;
 
 namespace Sniffer.KillBoard
 {
@@ -167,14 +168,16 @@ namespace Sniffer.KillBoard
             var victim = await victimTask;
             var victimCorp = await victimCorpTask;
             var victimAlliance = await victimAllianceTask;
+            var victimShip = EveStaticDataProvider.Instance.ShipIds.GetValueOrDefault(kmVictim.ship_type_id);
 
             var killer = await killerTask;
             var killerCorp = await killerCorpTask;
             var killerAlliance = await killerAllianceTask;
+            var killerShip = EveStaticDataProvider.Instance.ShipIds.GetValueOrDefault(kmKiller.ship_type_id);
 
             var killLocation = EveStaticDataProvider.Instance.SystemIds[package.killmail.solar_system_id];
 
-            return new KillData(victim, victimCorp, victimAlliance, killer, killerCorp, killerAlliance, killLocation);
+            return new KillData(victim, victimCorp, victimAlliance, victimShip, killer, killerCorp, killerAlliance, killerShip, killLocation);
         }
 
         private async Task SendKillMessage(ITextChannel textChannel, Package package, KillData killData, int range)
@@ -187,18 +190,20 @@ namespace Sniffer.KillBoard
 
             if (killData.Victim != null)
             {
-                message.AddField("Victim", MakeShipMarkdown(killData.Victim, killData.VictimCorp, killData.VictimAlliance));
+                message.AddField("Victim", MakeShipMarkdown(killData.Victim, killData.VictimCorp, killData.VictimAlliance, killData.VicimShip));
             }
 
             if (killData.Killer != null)
             {
-                message.AddField("Final Blow", MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.VictimAlliance));
+                message.AddField("Final Blow", MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip));
             }
 
             if (package.zkb != null)
             {
+                message.AddField("Time", $"{package.killmail.killmail_time:g}");
+
                 var currency = string.Format(EveOnlineNumberFormat.IskNumberFormat, "{0:C0}", package.zkb.totalValue);
-                message.AddField("Details", $"Total value: {currency}");
+                message.AddField("Details", $"[Total value: {currency}](https://zkillboard.com/kill/{package.killID}/)");
             }
 
             var jumps = range == 1 ? "jump" : "jumps";
@@ -207,23 +212,28 @@ namespace Sniffer.KillBoard
             await textChannel.SendMessageAsync(embed: message.Build());
         }
 
-        private static string MakeShipMarkdown(CharacterData victim, CorporationData corp, AllianceData alliance)
+        private static string MakeShipMarkdown(CharacterData victim, CorporationData corp, AllianceData alliance, TypeID ship)
         {
             var sb = new StringBuilder();
 
             if (victim != null)
             {
-                sb.Append("Name: ").AppendLine(victim.Name);
+                sb.Append("Name: ").Append('[').Append(victim.Name).Append("](https://zkillboard.com/character/").Append(victim.Id).AppendLine("/)");
             }
 
             if (corp != null)
             {
-                sb.Append("Corp: ").Append(corp.Name).Append(" [").Append(corp.Ticker).AppendLine("]");
+                sb.Append("Corp: ").Append('[').Append(corp.Name).Append("](https://zkillboard.com/corporation/").Append(corp.Id).Append("/)").Append('[').Append(corp.Ticker).Append(']');
             }
 
             if (alliance != null)
             {
-                sb.Append("Alliance: ").Append(alliance.Name).Append(" [").Append(alliance.Ticker).AppendLine("]");
+                sb.Append("Alliance: ").Append('[').Append(alliance.Name).Append("](https://zkillboard.com/alliance/").Append(alliance.Id).Append("/)").Append(" [").Append(alliance.Ticker).AppendLine("]");
+            }
+
+            if (ship != null)
+            {
+                sb.Append("Ship: ").AppendLine(ship.EnglishName);
             }
 
             return sb.ToString();

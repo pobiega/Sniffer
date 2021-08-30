@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -30,6 +31,8 @@ namespace Sniffer.Static
         public static void Initialize()
         {
             Instance.SystemIds = LoadOrCreateLookup(Path.Combine("sde", "generated", "systemIds.yaml"), CalculateSystemIdLookup);
+            Instance.GroupIds = LoadYamlToImmutableDict<int, GroupID>(Path.Combine("sde", "fsd", "groupIDs.yaml"));
+            Instance.ShipIds = LoadOrCreateLookup(Path.Combine("sde", "generated", "shipTypeIds.yaml"), CalculateShipIdLookUp);
         }
 
         public static EveStaticDataProvider Instance => _instance ??= new EveStaticDataProvider();
@@ -46,6 +49,8 @@ namespace Sniffer.Static
         }
 
         public ImmutableDictionary<int, string> SystemIds { get; private set; }
+        public ImmutableDictionary<int, GroupID> GroupIds { get; private set; }
+        public ImmutableDictionary<int, TypeID> ShipIds { get; private set; }
 
         private static ImmutableDictionary<TKey, TValue> LoadOrCreateLookup<TKey, TValue>(string path, Func<ImmutableDictionary<TKey, TValue>> create)
         {
@@ -92,6 +97,20 @@ namespace Sniffer.Static
             }
 
             return dict.ToImmutableDictionary();
+        }
+
+        private static ImmutableDictionary<int, TypeID> CalculateShipIdLookUp()
+        {
+            var path = Path.Combine("sde", "fsd", "typeIDs.yaml");
+            using TextReader reader = new StreamReader(path);
+
+            return _deserializer
+                .Deserialize<Dictionary<int, TypeID>>(reader)
+                .Where(t =>
+                {
+                    var group = Instance.GroupIds.GetValueOrDefault(t.Value.GroupID);
+                    return group.CategoryID == 6;
+                }).ToImmutableDictionary();
         }
 
         public bool TryGetSystemIdByName(string systemName, out int systemId, out string actualSystemName)

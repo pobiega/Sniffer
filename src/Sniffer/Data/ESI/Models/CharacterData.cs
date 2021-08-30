@@ -6,5 +6,6 @@ namespace Sniffer.Data.ESI.Models
     {
         [JsonProperty("name")]
         public string Name { get; set; }
+        public int Id { get; set; }
     }
 }
