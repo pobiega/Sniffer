@@ -11,6 +11,7 @@ using Sniffer.Static;
 using Sniffer.Data;
 using System.Text;
 using Sniffer.Data.ESI.Models;
+using System.Collections.Generic;
 
 namespace Sniffer.KillBoard
 {
@@ -83,8 +84,10 @@ namespace Sniffer.KillBoard
                 return;
             }
 
-            // TODO: send a message to discord, if the message matches our criteria.
+            
+            List<ChannelRange> channelRanges = new();
 
+            // TODO: send a message to discord, if the message matches our criteria.
             foreach (var channelSettings in _monitorSettings)
             {
                 // determine if the kill was in range of any current watch
@@ -99,17 +102,37 @@ namespace Sniffer.KillBoard
                 var range = route.Count - 1; // subtract the origin system
                 if (range <= channelSettings.Value.radius)
                 {
+                    channelRanges.Add(new ChannelRange(channelSettings.Key, range));
+                }
+            }
+
+            if (channelRanges.Count > 0)
+            {
+                KillData killData = null;
+
+                try
+                {
+                    killData = await GetKillDataFromPackage(e.Package);
+                }
+                catch (Exception)
+                {
+                    //TODO: Send Fallback message with link to zkb.
+                    return;
+                }
+
+                foreach (var channelRange in channelRanges)
+                {
                     // alert the channel
-                    var channel = _discordClient.GetChannel(channelSettings.Key);
+                    var channel = _discordClient.GetChannel(channelRange.ChannelKey);
                     if (channel is not null && channel is ITextChannel textChannel)
                     {
-                        await SendKillMessage(textChannel, e.Package, range);
+                        await SendKillMessage(textChannel, e.Package, killData, channelRange.Range);
                     }
                 }
             }
         }
 
-        private async Task SendKillMessage(ITextChannel textChannel, Package package, int range)
+        private async Task<KillData> GetKillDataFromPackage(Package package)
         {
             var kmVictim = package.killmail.victim;
 
@@ -151,20 +174,25 @@ namespace Sniffer.KillBoard
 
             var killLocation = EveStaticDataProvider.Instance.SystemIds[package.killmail.solar_system_id];
 
+            return new KillData(victim, victimCorp, victimAlliance, killer, killerCorp, killerAlliance, killLocation);
+        }
+
+        private async Task SendKillMessage(ITextChannel textChannel, Package package, KillData killData, int range)
+        {
             var message = new EmbedBuilder
             {
                 Url = package.zkb.href,
                 Timestamp = package.killmail.killmail_time,
             };
 
-            if (victim != null)
+            if (killData.Victim != null)
             {
-                message.AddField("Victim", MakeShipMarkdown(victim, victimCorp, victimAlliance));
+                message.AddField("Victim", MakeShipMarkdown(killData.Victim, killData.VictimCorp, killData.VictimAlliance));
             }
 
-            if (kmKiller != null)
+            if (killData.Killer != null)
             {
-                message.AddField("Final Blow", MakeShipMarkdown(killer, killerCorp, killerAlliance));
+                message.AddField("Final Blow", MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.VictimAlliance));
             }
 
             if (package.zkb != null)
@@ -174,7 +202,7 @@ namespace Sniffer.KillBoard
             }
 
             var jumps = range == 1 ? "jump" : "jumps";
-            message.AddField("Solar system", $"**{killLocation}**\nRange: {range} {jumps} away.");
+            message.AddField("Solar system", $"**{killData.KillLocation}**\nRange: {range} {jumps} away.");
 
             await textChannel.SendMessageAsync(embed: message.Build());
         }
