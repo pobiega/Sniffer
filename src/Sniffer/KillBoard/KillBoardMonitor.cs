@@ -13,6 +13,9 @@ using System.Text;
 using Sniffer.Data.ESI.Models;
 using System.Collections.Generic;
 using Sniffer.Static.Models;
+using System.Linq;
+using MoreLinq;
+using Sniffer.Persistance.Model;
 
 namespace Sniffer.KillBoard
 {
@@ -67,7 +70,7 @@ namespace Sniffer.KillBoard
 
             foreach (var item in dbContext.ChannelConfigurations)
             {
-                settings.Add(item.DiscordChannelId, item.Radius, item.SystemId);
+                settings.Add(item.DiscordChannelId, item.Radius, item.SystemId, item.KillType);
             }
 
             return settings;
@@ -85,12 +88,18 @@ namespace Sniffer.KillBoard
                 return;
             }
 
-            
             List<ChannelRange> channelRanges = new();
 
             // TODO: send a message to discord, if the message matches our criteria.
             foreach (var channelSettings in _monitorSettings)
             {
+                var killType = GetKillTypeForPackage(e.Package);
+
+                if (channelSettings.Value.killType != KillType.All && channelSettings.Value.killType != killType)
+                {
+                    continue;
+                }
+
                 // determine if the kill was in range of any current watch
                 var route = await _esiClient.GetRouteDataAsync(e.Package.killmail.solar_system_id, channelSettings.Value.systemId).ConfigureAwait(false);
 
@@ -100,38 +109,43 @@ namespace Sniffer.KillBoard
                     continue;
                 }
 
-                var range = route.Count - 1; // subtract the origin system
-                if (range <= channelSettings.Value.radius)
+                var actualRange = route.Count - 1; // subtract the origin system
+                if (actualRange > channelSettings.Value.radius)
                 {
-                    channelRanges.Add(new ChannelRange(channelSettings.Key, range));
-                }
-            }
-
-            if (channelRanges.Count > 0)
-            {
-                KillData killData = null;
-
-                try
-                {
-                    killData = await GetKillDataFromPackage(e.Package);
-                }
-                catch (Exception)
-                {
-                    //TODO: Send Fallback message with link to zkb.
-                    return;
+                    continue;
                 }
 
-                foreach (var channelRange in channelRanges)
+                channelRanges.Add(new ChannelRange(channelSettings.Key, channelSettings.Value, actualRange));
+
+                if (channelRanges.Count > 0)
                 {
-                    // alert the channel
-                    var channel = _discordClient.GetChannel(channelRange.ChannelKey);
-                    if (channel is not null && channel is ITextChannel textChannel)
+                    KillData killData = null;
+
+                    try
                     {
-                        await SendKillMessage(textChannel, e.Package, killData, channelRange.Range);
+                        killData = await GetKillDataFromPackage(e.Package);
+                    }
+                    catch (Exception)
+                    {
+                        //TODO: Send Fallback message with link to zkb.
+                        return;
+                    }
+
+                    foreach (var channelRange in channelRanges)
+                    {
+                        // alert the channel
+                        var channel = _discordClient.GetChannel(channelRange.ChannelKey);
+                        if (channel is not null && channel is ITextChannel textChannel)
+                        {
+                            await SendKillMessage(textChannel, e.Package, killData, channelRange.Range, channelRange.Value);
+                        }
                     }
                 }
             }
         }
+
+        private KillType GetKillTypeForPackage(Package package)
+            => IsNPCOnlyKillMail(package) ? KillType.NPC : KillType.Player;
 
         private async Task<KillData> GetKillDataFromPackage(Package package)
         {
@@ -148,39 +162,73 @@ namespace Sniffer.KillBoard
             var victimAllianceTask = kmVictim.alliance_id != default
                 ? _esiClient.GetAllianceDataAsync(kmVictim.alliance_id)
                 : Task.FromResult<AllianceData>(null);
+            var killLocation = EveStaticDataProvider.Instance.SystemIds[package.killmail.solar_system_id];
 
-            var kmKiller = package.killmail.attackers != null
-                ? package.killmail.attackers[0]
-                : null;
+            TypeID victimShip;
+            if (IsNPCOnlyKillMail(package))
+            {
+                victimShip = EveStaticDataProvider.Instance.ShipIds.GetValueOrDefault(kmVictim.ship_type_id);
 
-            var killerTask = kmKiller != null && kmKiller.character_id != default
-                ? _esiClient.GetCharacterDataAsync(kmKiller.character_id)
+                return new KillData(await victimTask, await victimCorpTask, await victimAllianceTask, victimShip, killLocation);
+            }
+
+            var kmHighestDamage = package.killmail.attackers?
+                .MaxBy(a => a.damage_done).FirstOrDefault();
+
+            var killerTask = kmHighestDamage != null && kmHighestDamage.character_id != default
+                ? _esiClient.GetCharacterDataAsync(kmHighestDamage.character_id)
                 : Task.FromResult<CharacterData>(null);
 
-            var killerCorpTask = kmKiller != null && kmKiller.corporation_id != default
-                ? _esiClient.GetCorporationDataAsync(kmKiller.corporation_id)
+            var killerCorpTask = kmHighestDamage != null && kmHighestDamage.corporation_id != default
+                ? _esiClient.GetCorporationDataAsync(kmHighestDamage.corporation_id)
                 : Task.FromResult<CorporationData>(null);
 
-            var killerAllianceTask = kmKiller != null && kmKiller.alliance_id != default
-                ? _esiClient.GetAllianceDataAsync(kmKiller.alliance_id)
+            var killerAllianceTask = kmHighestDamage != null && kmHighestDamage.alliance_id != default
+                ? _esiClient.GetAllianceDataAsync(kmHighestDamage.alliance_id)
                 : Task.FromResult<AllianceData>(null);
+
+            var kmMostExpensiveAttacker = package.killmail.attackers?
+                .MaxBy(a => GetShipValue(a.ship_type_id)).FirstOrDefault();
+
+            var mostExpensiveAttackerShip = EveStaticDataProvider.Instance.ShipIds.GetValueOrDefault(kmMostExpensiveAttacker.ship_type_id);
 
             var victim = await victimTask;
             var victimCorp = await victimCorpTask;
             var victimAlliance = await victimAllianceTask;
-            var victimShip = EveStaticDataProvider.Instance.ShipIds.GetValueOrDefault(kmVictim.ship_type_id);
+            victimShip = EveStaticDataProvider.Instance.ShipIds.GetValueOrDefault(kmVictim.ship_type_id);
 
             var killer = await killerTask;
             var killerCorp = await killerCorpTask;
             var killerAlliance = await killerAllianceTask;
-            var killerShip = EveStaticDataProvider.Instance.ShipIds.GetValueOrDefault(kmKiller.ship_type_id);
+            var killerShip = EveStaticDataProvider.Instance.ShipIds.GetValueOrDefault(kmHighestDamage.ship_type_id);
 
-            var killLocation = EveStaticDataProvider.Instance.SystemIds[package.killmail.solar_system_id];
-
-            return new KillData(victim, victimCorp, victimAlliance, victimShip, killer, killerCorp, killerAlliance, killerShip, killLocation);
+            return new KillData(
+                Victim: victim,
+                VictimCorp: victimCorp,
+                VictimAlliance: victimAlliance,
+                VicimShip: victimShip,
+                AttackerCount: package.killmail.attackers.Length,
+                Killer: killer,
+                KillerCorp: killerCorp,
+                KillerAlliance: killerAlliance,
+                KillerShip: killerShip,
+                MostExpensiveAttackerShip: mostExpensiveAttackerShip,
+                KillLocation: killLocation);
         }
 
-        private async Task SendKillMessage(ITextChannel textChannel, Package package, KillData killData, int range)
+        private bool IsNPCOnlyKillMail(Package package)
+        {
+            return package?.killmail?.attackers?.All(a => a.faction_id != null) ?? false;
+        }
+
+        private static decimal GetShipValue(int ship_type_id)
+        {
+            return EveStaticDataProvider.Instance.ShipIds.TryGetValue(ship_type_id, out var typeid)
+                ? typeid.BasePrice
+                : -1;
+        }
+
+        private async Task SendKillMessage(ITextChannel textChannel, Package package, KillData killData, int range, (int radius, int systemId, Persistance.Model.KillType killType) configuredSettings)
         {
             var message = new EmbedBuilder
             {
@@ -193,9 +241,22 @@ namespace Sniffer.KillBoard
                 message.AddField("Victim", MakeShipMarkdown(killData.Victim, killData.VictimCorp, killData.VictimAlliance, killData.VicimShip));
             }
 
+            var killerText = killData.AttackerCount > 1
+                ? "Most damage done by"
+                : "Solo killed by";
+
             if (killData.Killer != null)
             {
-                message.AddField("Final Blow", MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip));
+                message.AddField(killerText, MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip));
+            }
+
+            if (killData.AttackerCount > 1)
+            {
+                if (killData.MostExpensiveAttackerShip != null)
+                {
+                    message.AddField("Most expensive attacker ship", killData.MostExpensiveAttackerShip.EnglishName);
+                }
+                message.AddField("Number of attackers", killData.AttackerCount);
             }
 
             if (package.zkb != null)
@@ -206,8 +267,33 @@ namespace Sniffer.KillBoard
                 message.AddField("Details", $"[Total value: {currency}](https://zkillboard.com/kill/{package.killID}/)");
             }
 
-            var jumps = range == 1 ? "jump" : "jumps";
-            message.AddField("Solar system", $"**{killData.KillLocation}**\nRange: {range} {jumps} away.");
+            var rangeJumps = range == 1 ? "jump" : "jumps";
+            var radiusJumps = configuredSettings.radius == 1 ? "jump" : "jumps";
+
+            var systemName = EveStaticDataProvider.Instance.SystemIds.GetValueOrDefault(configuredSettings.systemId);
+
+            var systemText = new StringBuilder();
+
+            systemText.AppendLine($"**{killData.KillLocation}**");
+            systemText.AppendLine($"Range: {range} {rangeJumps} away.");
+
+            if (systemName != null)
+            {
+                var text = $"Currently watching: {configuredSettings.radius} jumps from {systemName}";
+
+                if (configuredSettings.killType == KillType.Player)
+                {
+                    text += ", player kills only.";
+                }
+                else if (configuredSettings.killType == KillType.NPC)
+                {
+                    text += ", only pure NPC kills.";
+                }
+
+                systemText.Append(text);
+            }
+
+            message.AddField("Solar system", systemText.ToString());
 
             await textChannel.SendMessageAsync(embed: message.Build());
         }
@@ -224,22 +310,24 @@ namespace Sniffer.KillBoard
             if (corp != null)
             {
                 sb.Append("Corp: ").Append('[').Append(corp.Name).Append("](https://zkillboard.com/corporation/").Append(corp.Id).Append("/)").Append('[').Append(corp.Ticker).Append(']');
-            }
 
-            if (alliance != null)
-            {
-                sb.Append("Alliance: ").Append('[').Append(alliance.Name).Append("](https://zkillboard.com/alliance/").Append(alliance.Id).Append("/)").Append(" [").Append(alliance.Ticker).AppendLine("]");
+                if (alliance != null)
+                {
+                    sb.AppendLine();
+                    sb.Append("Alliance: ").Append('[').Append(alliance.Name).Append("](https://zkillboard.com/alliance/").Append(alliance.Id).Append("/)").Append(" [").Append(alliance.Ticker).Append("]");
+                }
             }
 
             if (ship != null)
             {
+                sb.AppendLine();
                 sb.Append("Ship: ").AppendLine(ship.EnglishName);
             }
 
             return sb.ToString();
         }
 
-        public bool TrySetChannelSettings(ISocketMessageChannel channel, int radius, string text, out Result<string> result)
+        public bool TrySetChannelSettings(ISocketMessageChannel channel, int radius, string text, Persistance.Model.KillType killType, out Result<string> result)
         {
             // TODO: revisit this.
 
@@ -257,13 +345,13 @@ namespace Sniffer.KillBoard
                 return false;
             }
 
-            SetChannelSettings(channel.Id, radius, systemId);
+            SetChannelSettings(channel.Id, radius, systemId, killType);
 
             result = new Result<string>(systemName, null);
             return true;
         }
 
-        private void SetChannelSettings(ulong id, int radius, int systemId)
+        private void SetChannelSettings(ulong id, int radius, int systemId, KillType killType)
         {
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetService<SnifferDbContext>();
@@ -288,7 +376,7 @@ namespace Sniffer.KillBoard
             // TODO: if this fails, we should let the user know
             dbContext.SaveChanges();
 
-            _monitorSettings.Add(id, radius, systemId);
+            _monitorSettings.Add(id, radius, systemId, killType);
         }
 
         private bool IsConfigurableChannel(ISocketMessageChannel channel)

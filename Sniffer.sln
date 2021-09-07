@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31229.75
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer", "src\Sniffer\Sniffer.csproj", "{00B664AB-1DFA-461F-9F98-496D85617A2E}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{04B2E205-E245-4D2D-9041-D0C6F11778C3}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -14,13 +12,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer", "src\Sniffer\Sniffer.csproj", "{00B664AB-1DFA-461F-9F98-496D85617A2E}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Tests", "tests\Sniffer.Tests\Sniffer.Tests.csproj", "{0D0D1F0C-C057-45FD-AFFA-3A133AB280A0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Debugger", "src\Sniffer.Debugger\Sniffer.Debugger.csproj", "{D008606F-3D3D-4779-87D9-E347A4DE7438}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Persistance", "Sniffer.Persistance\Sniffer.Persistance.csproj", "{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sniffer.Persistance", "src\Sniffer.Persistance\Sniffer.Persistance.csproj", "{7621D2B3-D4E4-41E9-AEEB-FDAC8CC715FC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sniffer.Static", "Sniffer.Static\Sniffer.Static.csproj", "{F2BFA9C4-ED4F-4316-99C3-64339D3630EE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sniffer.Static", "src\Sniffer.Static\Sniffer.Static.csproj", "{F2BFA9C4-ED4F-4316-99C3-64339D3630EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

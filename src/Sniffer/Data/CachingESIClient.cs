@@ -37,7 +37,7 @@ namespace Sniffer.Data
         public override async Task<CorporationData> GetCorporationDataAsync(int corpId)
         {
             return await _cache.GetOrCreateAsync(
-                GetKey(nameof(CorporationData)),
+                GetKey(nameof(CorporationData), corpId),
                 () => base.GetCorporationDataAsync(corpId));
         }
 

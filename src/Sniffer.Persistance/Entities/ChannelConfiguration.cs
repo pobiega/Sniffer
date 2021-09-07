@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Sniffer.Persistance.Model;
+using System.ComponentModel.DataAnnotations;
 
 namespace Sniffer.Persistance.Entities
 {
@@ -10,5 +11,7 @@ namespace Sniffer.Persistance.Entities
         public int Radius { get; set; }
 
         public int SystemId { get; set; }
+
+        public KillType KillType { get; set; }
     }
 }
