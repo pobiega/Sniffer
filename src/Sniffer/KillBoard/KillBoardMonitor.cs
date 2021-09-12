@@ -20,6 +20,7 @@ using System.Linq;
 using Remora.Discord.Core;
 using Remora.Results;
 using Sniffer.KillBoard.Errors;
+using Humanizer;
 
 namespace Sniffer.KillBoard
 {
@@ -241,7 +242,7 @@ namespace Sniffer.KillBoard
 
             if (killData.Killer != null)
             {
-                fields.Add(new EmbedField("Final Blow", MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip)));
+                fields.Add(new EmbedField(killerText, MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip)));
             }
 
             if (killData.AttackerCount > 1)
@@ -262,19 +263,16 @@ namespace Sniffer.KillBoard
                 fields.Add(new EmbedField("Details", $"[Total value: {currency}](https://zkillboard.com/kill/{package.killID}/)"));
             }
 
-            var rangeJumps = range == 1 ? "jump" : "jumps";
-            var radiusJumps = configuredSettings.radius == 1 ? "jump" : "jumps";
-
             var systemName = EveStaticDataProvider.Instance.SystemIds.GetValueOrDefault(configuredSettings.systemId);
 
             var systemText = new StringBuilder();
 
             systemText.AppendLine($"**{killData.KillLocation}**");
-            systemText.AppendLine($"Range: {range} {rangeJumps} away.");
+            systemText.AppendLine($"Range: {"jump".ToQuantity(range)} away.");
 
             if (systemName != null)
             {
-                var text = $"Currently watching: {configuredSettings.radius} {radiusJumps} from {systemName}";
+                var text = $"Currently watching: {"jump".ToQuantity(configuredSettings.radius)} from {systemName}";
 
                 if (configuredSettings.killType == KillType.Player)
                 {

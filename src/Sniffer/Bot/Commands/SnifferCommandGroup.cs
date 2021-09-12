@@ -1,4 +1,5 @@
-﻿using Remora.Commands.Attributes;
+﻿using Humanizer;
+using Remora.Commands.Attributes;
 using Remora.Commands.Groups;
 using Remora.Discord.Commands.Contexts;
 using Remora.Discord.Commands.Feedback.Services;
@@ -7,7 +8,6 @@ using Remora.Results;
 using Serilog;
 using Sniffer.KillBoard;
 using Sniffer.Persistance.Model;
-using System;
 using System.Threading.Tasks;
 
 namespace Sniffer.Bot.Commands
@@ -48,7 +48,7 @@ namespace Sniffer.Bot.Commands
                 return setChannelSettings;
             }
 
-            var response = $"{radius} jumps from {setChannelSettings.Entity}";
+            var response = $"{"jump".ToQuantity(radius)} from {setChannelSettings.Entity}";
 
             if (killType == KillType.Player)
             {
