@@ -59,6 +59,7 @@ namespace Sniffer.KillBoard.ZKill
         public int alliance_id { get; set; }
         public int character_id { get; set; }
         public int corporation_id { get; set; }
+        public int? faction_id { get; set; }
         public int damage_done { get; set; }
         public bool final_blow { get; set; }
         public float security_status { get; set; }
