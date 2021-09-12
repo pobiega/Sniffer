@@ -22,7 +22,7 @@ namespace Sniffer.KillBoard.ZKill
     {
         public Attacker[] attackers { get; set; }
         public int killmail_id { get; set; }
-        public DateTime killmail_time { get; set; }
+        public DateTimeOffset killmail_time { get; set; }
         public int solar_system_id { get; set; }
         public Victim victim { get; set; }
     }

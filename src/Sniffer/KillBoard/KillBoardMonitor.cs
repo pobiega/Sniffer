@@ -1,6 +1,4 @@
-﻿using Discord;
-using Discord.WebSocket;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Serilog;
 using Sniffer.KillBoard.ZKill;
 using Sniffer.Persistance;
@@ -13,14 +11,18 @@ using System.Text;
 using Sniffer.Data.ESI.Models;
 using System.Collections.Generic;
 using Sniffer.Static.Models;
-using System.Linq;
-using MoreLinq;
+using Remora.Discord.API.Abstractions.Rest;
+using Remora.Discord.API.Abstractions.Objects;
+using Remora.Discord.API.Objects;
 using Sniffer.Persistance.Model;
+using MoreLinq;
+using System.Linq;
+using Remora.Discord.Core;
+using Remora.Results;
+using Sniffer.KillBoard.Errors;
 
 namespace Sniffer.KillBoard
 {
-    public record Result<T>(T Value, string ErrorMessage);
-
     // TODO: rename this? its more of a manager type class at this point
     public class KillBoardMonitor
     {
@@ -31,7 +33,7 @@ namespace Sniffer.KillBoard
         private readonly IZKillProcessingService _zKillProcessingService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IESIClient _esiClient;
-        private readonly DiscordSocketClient _discordClient;
+        private readonly IDiscordRestChannelAPI _channelAPI;
 
         public KillBoardMonitor(
             ILogger logger,
@@ -39,7 +41,7 @@ namespace Sniffer.KillBoard
             IServiceProvider serviceProvider,
             IZKillProcessingService zKillProcessingService,
             IESIClient esiClient,
-            DiscordSocketClient discordClient
+            IDiscordRestChannelAPI channelAPI
             )
         {
             _logger = logger;
@@ -47,7 +49,7 @@ namespace Sniffer.KillBoard
             _zKillProcessingService = zKillProcessingService;
             _serviceProvider = serviceProvider;
             _esiClient = esiClient;
-            _discordClient = discordClient;
+            _channelAPI = channelAPI;
         }
 
         public Task Initialize()
@@ -79,11 +81,6 @@ namespace Sniffer.KillBoard
         private async Task OnPackageArrived(object sender, PackageArrivedEventArgs e)
         {
             if (_monitorSettings is null)
-            {
-                return;
-            }
-
-            if (_discordClient.ConnectionState != ConnectionState.Connected)
             {
                 return;
             }
@@ -133,11 +130,12 @@ namespace Sniffer.KillBoard
 
                     foreach (var channelRange in channelRanges)
                     {
+                        var channel = await _channelAPI.GetChannelAsync(new Remora.Discord.Core.Snowflake(channelRange.ChannelKey));
+
                         // alert the channel
-                        var channel = _discordClient.GetChannel(channelRange.ChannelKey);
-                        if (channel is not null && channel is ITextChannel textChannel)
+                        if (channel.IsSuccess && channel.Entity.Type == ChannelType.GuildText)
                         {
-                            await SendKillMessage(textChannel, e.Package, killData, channelRange.Range, channelRange.Value);
+                            await SendKillMessage(channel.Entity, e.Package, killData, channelRange.Range, channelRange.Value);
                         }
                     }
                 }
@@ -228,17 +226,13 @@ namespace Sniffer.KillBoard
                 : -1;
         }
 
-        private async Task SendKillMessage(ITextChannel textChannel, Package package, KillData killData, int range, (int radius, int systemId, Persistance.Model.KillType killType) configuredSettings)
+        private async Task SendKillMessage(IChannel channel, Package package, KillData killData, int range, (int radius, int systemId, Persistance.Model.KillType killType) configuredSettings)
         {
-            var message = new EmbedBuilder
-            {
-                Url = package.zkb.href,
-                Timestamp = package.killmail.killmail_time,
-            };
+            List<EmbedField> fields = new List<EmbedField>();
 
             if (killData.Victim != null)
             {
-                message.AddField("Victim", MakeShipMarkdown(killData.Victim, killData.VictimCorp, killData.VictimAlliance, killData.VicimShip));
+                fields.Add(new EmbedField("Victim", MakeShipMarkdown(killData.Victim, killData.VictimCorp, killData.VictimAlliance, killData.VicimShip)));
             }
 
             var killerText = killData.AttackerCount > 1
@@ -247,24 +241,25 @@ namespace Sniffer.KillBoard
 
             if (killData.Killer != null)
             {
-                message.AddField(killerText, MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip));
+                fields.Add(new EmbedField("Final Blow", MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip)));
             }
 
             if (killData.AttackerCount > 1)
             {
                 if (killData.MostExpensiveAttackerShip != null)
                 {
-                    message.AddField("Most expensive attacker ship", killData.MostExpensiveAttackerShip.EnglishName);
+                    fields.Add(new EmbedField("Most expensive attacker ship", killData.MostExpensiveAttackerShip.EnglishName));
                 }
-                message.AddField("Number of attackers", killData.AttackerCount);
+                fields.Add(new EmbedField("Number of attackers", killData.AttackerCount.ToString()));
+
             }
 
             if (package.zkb != null)
             {
-                message.AddField("Time", $"{package.killmail.killmail_time:g}");
+                fields.Add(new EmbedField("Time", $"{package.killmail.killmail_time:g}"));
 
                 var currency = string.Format(EveOnlineNumberFormat.IskNumberFormat, "{0:C0}", package.zkb.totalValue);
-                message.AddField("Details", $"[Total value: {currency}](https://zkillboard.com/kill/{package.killID}/)");
+                fields.Add(new EmbedField("Details", $"[Total value: {currency}](https://zkillboard.com/kill/{package.killID}/)"));
             }
 
             var rangeJumps = range == 1 ? "jump" : "jumps";
@@ -279,7 +274,7 @@ namespace Sniffer.KillBoard
 
             if (systemName != null)
             {
-                var text = $"Currently watching: {configuredSettings.radius} jumps from {systemName}";
+                var text = $"Currently watching: {configuredSettings.radius} {radiusJumps} from {systemName}";
 
                 if (configuredSettings.killType == KillType.Player)
                 {
@@ -293,9 +288,16 @@ namespace Sniffer.KillBoard
                 systemText.Append(text);
             }
 
-            message.AddField("Solar system", systemText.ToString());
+            fields.Add(new EmbedField("Solar system", systemText.ToString()));
 
-            await textChannel.SendMessageAsync(embed: message.Build());
+            var embed = new Embed
+            {
+                Url = package.zkb.href,
+                Timestamp = package.killmail.killmail_time,
+                Fields = fields
+            };
+
+            await _channelAPI.CreateMessageAsync(channel.ID, embeds: new[] { embed });
         }
 
         private static string MakeShipMarkdown(CharacterData victim, CorporationData corp, AllianceData alliance, TypeID ship)
@@ -327,28 +329,30 @@ namespace Sniffer.KillBoard
             return sb.ToString();
         }
 
-        public bool TrySetChannelSettings(ISocketMessageChannel channel, int radius, string text, Persistance.Model.KillType killType, out Result<string> result)
+        public async Task<Result<string>> TrySetChannelSettings(Snowflake channelID, int radius, string text, Persistance.Model.KillType killType)
         {
             // TODO: revisit this.
 
-            _ = channel ?? throw new ArgumentNullException(nameof(channel));
+            var channel = await _channelAPI.GetChannelAsync(channelID);
 
-            if (!IsConfigurableChannel(channel))
+            if (!channel.IsSuccess)
             {
-                result = new Result<string>(null, "Channel not configurable.");
-                return false;
+                return Result<string>.FromError(new NotFoundError("No channel with that ID found."), channel);
+            }
+
+            if (!IsConfigurableChannel(channel.Entity))
+            {
+                return Result<string>.FromError(new NotConfigurableError("That channel is not configurable for kill monitoring."));
             }
 
             if (!EveStaticDataProvider.Instance.TryGetSystemIdByName(text, out var systemId, out var systemName))
             {
-                result = new Result<string>(null, "No system by that name found.");
-                return false;
+                return Result<string>.FromError(new NotFoundError("No system has that name."));
             }
 
-            SetChannelSettings(channel.Id, radius, systemId, killType);
+            SetChannelSettings(channel.Entity.ID.Value, radius, systemId, killType);
 
-            result = new Result<string>(systemName, null);
-            return true;
+            return Result<string>.FromSuccess(systemName);
         }
 
         private void SetChannelSettings(ulong id, int radius, int systemId, KillType killType)
@@ -379,15 +383,14 @@ namespace Sniffer.KillBoard
             _monitorSettings.Add(id, radius, systemId, killType);
         }
 
-        private bool IsConfigurableChannel(ISocketMessageChannel channel)
+        private bool IsConfigurableChannel(IChannel channel)
         {
-
-            if (channel is not ITextChannel textChannel)
+            if (channel.Type != ChannelType.GuildText || !channel.Name.HasValue)
             {
                 return false;
             }
 
-            return textChannel.Name.StartsWith(_settings.Value.ChannelPrefix, System.StringComparison.OrdinalIgnoreCase);
+            return channel.Name.Value.StartsWith(_settings.Value.ChannelPrefix, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
