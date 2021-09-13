@@ -21,6 +21,7 @@ using Remora.Discord.Core;
 using Remora.Results;
 using Sniffer.KillBoard.Errors;
 using Humanizer;
+using Remora.Discord.Commands.Feedback.Services;
 
 namespace Sniffer.KillBoard
 {
@@ -35,6 +36,7 @@ namespace Sniffer.KillBoard
         private readonly IServiceProvider _serviceProvider;
         private readonly IESIClient _esiClient;
         private readonly IDiscordRestChannelAPI _channelAPI;
+        private readonly FeedbackService _feedbackService;
 
         public KillBoardMonitor(
             ILogger logger,
@@ -42,7 +44,8 @@ namespace Sniffer.KillBoard
             IServiceProvider serviceProvider,
             IZKillProcessingService zKillProcessingService,
             IESIClient esiClient,
-            IDiscordRestChannelAPI channelAPI
+            IDiscordRestChannelAPI channelAPI,
+            FeedbackService feedbackService
             )
         {
             _logger = logger;
@@ -51,6 +54,7 @@ namespace Sniffer.KillBoard
             _serviceProvider = serviceProvider;
             _esiClient = esiClient;
             _channelAPI = channelAPI;
+            _feedbackService = feedbackService;
         }
 
         public Task Initialize()
@@ -87,12 +91,10 @@ namespace Sniffer.KillBoard
             }
 
             List<ChannelRange> channelRanges = new();
+            var killType = GetKillTypeForPackage(e.Package);
 
-            // TODO: send a message to discord, if the message matches our criteria.
             foreach (var channelSettings in _monitorSettings)
             {
-                var killType = GetKillTypeForPackage(e.Package);
-
                 if (channelSettings.Value.killType != KillType.All && channelSettings.Value.killType != killType)
                 {
                     continue;
@@ -114,31 +116,38 @@ namespace Sniffer.KillBoard
                 }
 
                 channelRanges.Add(new ChannelRange(channelSettings.Key, channelSettings.Value, actualRange));
+            }
 
-                if (channelRanges.Count > 0)
+            if (channelRanges.Count <= 0)
+            {
+                return;
+            }
+
+            KillData killData = null;
+
+            try
+            {
+                killData = await GetKillDataFromPackage(e.Package);
+            }
+            catch (Exception)
+            {
+                var tasks = new List<Task>();
+                foreach (var channelRange in channelRanges)
                 {
-                    KillData killData = null;
+                    var channel = new Snowflake(channelRange.ChannelKey);
+                    tasks.Add(SendFallbackMessage(channel, e.Package));
+                }
+                await Task.WhenAll(tasks);
+                return;
+            }
 
-                    try
-                    {
-                        killData = await GetKillDataFromPackage(e.Package);
-                    }
-                    catch (Exception)
-                    {
-                        //TODO: Send Fallback message with link to zkb.
-                        return;
-                    }
+            foreach (var channelRange in channelRanges)
+            {
+                var channel = await _channelAPI.GetChannelAsync(new Snowflake(channelRange.ChannelKey));
 
-                    foreach (var channelRange in channelRanges)
-                    {
-                        var channel = await _channelAPI.GetChannelAsync(new Remora.Discord.Core.Snowflake(channelRange.ChannelKey));
-
-                        // alert the channel
-                        if (channel.IsSuccess && channel.Entity.Type == ChannelType.GuildText)
-                        {
-                            await SendKillMessage(channel.Entity, e.Package, killData, channelRange.Range, channelRange.Value);
-                        }
-                    }
+                if (channel.IsSuccess && channel.Entity.Type == ChannelType.GuildText)
+                {
+                    await SendKillMessage(channel.Entity, e.Package, killData, channelRange.Range, channelRange.Value);
                 }
             }
         }
@@ -290,12 +299,24 @@ namespace Sniffer.KillBoard
 
             var embed = new Embed
             {
-                Url = package.zkb.href,
                 Timestamp = package.killmail.killmail_time,
                 Fields = fields
             };
 
             await _channelAPI.CreateMessageAsync(channel.ID, embeds: new[] { embed });
+        }
+
+        private Task SendFallbackMessage(Snowflake channel, Package package)
+        {
+            var embed = new Embed
+            {
+                Title = "Failed to get kill information, linking to ZKB",
+                Type = EmbedType.Link,
+                Url = $"https://zkillboard.com/kill/{package.killID}/",
+                Timestamp = package.killmail.killmail_time,
+            };
+
+            return _feedbackService.SendEmbedAsync(channel, embed);
         }
 
         private static string MakeShipMarkdown(CharacterData victim, CorporationData corp, AllianceData alliance, TypeID ship)
@@ -329,8 +350,6 @@ namespace Sniffer.KillBoard
 
         public async Task<Result<string>> TrySetChannelSettings(Snowflake channelID, int radius, string text, Persistance.Model.KillType killType)
         {
-            // TODO: revisit this.
-
             var channel = await _channelAPI.GetChannelAsync(channelID);
 
             if (!channel.IsSuccess)
