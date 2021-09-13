@@ -1,9 +1,13 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
-using Serilog;
-using System.Threading.Tasks;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Remora.Discord.Commands.Extensions;
+using Remora.Commands.Extensions;
+using Sniffer.Bot.Commands;
+using Remora.Discord.Gateway.Extensions;
+using Remora.Discord.Hosting.Options;
+using Remora.Extensions.Options.Immutable;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Remora.Discord.Hosting.Services;
+using Microsoft.Extensions.Hosting;
 
 namespace Sniffer.Bot
 {
@@ -11,42 +15,22 @@ namespace Sniffer.Bot
     {
         public static void AddDiscordBot(this IServiceCollection services)
         {
-            var discordClient = new DiscordSocketClient();
-            discordClient.Log += DiscordNetLog;
-            services.AddSingleton(discordClient);
+            var token = "ODQzOTQyMTIyNDUzMjA1MDMz.YKLMWQ.5NPYflKG54akg__NR1S91CVGhLM";
 
             services.AddHttpClient();
 
-            var commandService = new CommandService();
-            commandService.Log += DiscordNetLog;
-            services.AddSingleton(commandService);
+            services.Configure(() => new DiscordServiceOptions());
 
-            services.AddSingleton<CommandHandler>();
-            services.AddSingleton<DiscordBot>();
-        }
+            services
+                .AddDiscordGateway(_ => token)
+                .AddDiscordCommands()
+                .AddCommandGroup<SnifferCommandGroup>();
 
-        private static Task DiscordNetLog(LogMessage arg)
-        {
-            switch (arg.Severity)
-            {
-                case LogSeverity.Critical:
-                    Log.Fatal(arg.Exception, arg.Message);
-                    break;
-                case LogSeverity.Error:
-                    Log.Error(arg.Exception, arg.Message);
-                    break;
-                case LogSeverity.Warning:
-                    Log.Warning(arg.Exception, arg.Message);
-                    break;
-                case LogSeverity.Info:
-                    Log.Information(arg.Exception, arg.Message);
-                    break;
-                case LogSeverity.Debug:
-                    Log.Debug(arg.Exception, arg.Message);
-                    break;
-            }
+            services.TryAddSingleton<DiscordService>();
 
-            return Task.CompletedTask;
+            services.AddSingleton<IHostedService, DiscordService>(serviceProvider =>
+                serviceProvider.GetRequiredService<DiscordService>());
+
         }
     }
 }
