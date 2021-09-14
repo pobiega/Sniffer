@@ -1,27 +1,27 @@
-﻿using Microsoft.Extensions.Options;
-using Serilog;
-using Sniffer.KillBoard.ZKill;
-using Sniffer.Persistance;
-using System;
-using System.Threading.Tasks;
+﻿using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
-using Sniffer.Static;
-using Sniffer.Data;
-using System.Text;
-using Sniffer.Data.ESI.Models;
-using System.Collections.Generic;
-using Sniffer.Static.Models;
-using Remora.Discord.API.Abstractions.Rest;
-using Remora.Discord.API.Abstractions.Objects;
-using Remora.Discord.API.Objects;
-using Sniffer.Persistance.Model;
+using Microsoft.Extensions.Options;
 using MoreLinq;
-using System.Linq;
+using Remora.Discord.API.Abstractions.Objects;
+using Remora.Discord.API.Abstractions.Rest;
+using Remora.Discord.API.Objects;
+using Remora.Discord.Commands.Feedback.Services;
 using Remora.Discord.Core;
 using Remora.Results;
+using Serilog;
+using Sniffer.Data;
+using Sniffer.Data.ESI.Models;
 using Sniffer.KillBoard.Errors;
-using Humanizer;
-using Remora.Discord.Commands.Feedback.Services;
+using Sniffer.KillBoard.ZKill;
+using Sniffer.Persistance;
+using Sniffer.Persistance.Model;
+using Sniffer.Static;
+using Sniffer.Static.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Sniffer.KillBoard
 {
@@ -36,7 +36,7 @@ namespace Sniffer.KillBoard
         private readonly IServiceProvider _serviceProvider;
         private readonly IESIClient _esiClient;
         private readonly IDiscordRestChannelAPI _channelAPI;
-        private readonly FeedbackService _feedbackService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public KillBoardMonitor(
             ILogger logger,
@@ -45,7 +45,7 @@ namespace Sniffer.KillBoard
             IZKillProcessingService zKillProcessingService,
             IESIClient esiClient,
             IDiscordRestChannelAPI channelAPI,
-            FeedbackService feedbackService
+            IServiceScopeFactory serviceScopeFactory
             )
         {
             _logger = logger;
@@ -54,7 +54,7 @@ namespace Sniffer.KillBoard
             _serviceProvider = serviceProvider;
             _esiClient = esiClient;
             _channelAPI = channelAPI;
-            _feedbackService = feedbackService;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         public Task Initialize()
@@ -131,13 +131,18 @@ namespace Sniffer.KillBoard
             }
             catch (Exception)
             {
+                using var scope = _serviceScopeFactory.CreateScope();
+
+                var feedbackService = scope.ServiceProvider.GetRequiredService<FeedbackService>();
+
                 var tasks = new List<Task>();
                 foreach (var channelRange in channelRanges)
                 {
                     var channel = new Snowflake(channelRange.ChannelKey);
-                    tasks.Add(SendFallbackMessage(channel, e.Package));
+                    tasks.Add(SendFallbackMessage(feedbackService, channel, e.Package));
                 }
                 await Task.WhenAll(tasks);
+
                 return;
             }
 
@@ -170,6 +175,7 @@ namespace Sniffer.KillBoard
             var victimAllianceTask = kmVictim.alliance_id != default
                 ? _esiClient.GetAllianceDataAsync(kmVictim.alliance_id)
                 : Task.FromResult<AllianceData>(null);
+
             var killLocation = EveStaticDataProvider.Instance.SystemIds[package.killmail.solar_system_id];
 
             TypeID victimShip;
@@ -245,12 +251,12 @@ namespace Sniffer.KillBoard
                 fields.Add(new EmbedField("Victim", MakeShipMarkdown(killData.Victim, killData.VictimCorp, killData.VictimAlliance, killData.VicimShip)));
             }
 
-            var killerText = killData.AttackerCount > 1
+            if (killData.Killer != null)
+            {
+                var killerText = killData.AttackerCount > 1
                 ? "Most damage done by"
                 : "Solo killed by";
 
-            if (killData.Killer != null)
-            {
                 fields.Add(new EmbedField(killerText, MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip)));
             }
 
@@ -261,7 +267,6 @@ namespace Sniffer.KillBoard
                     fields.Add(new EmbedField("Most expensive attacker ship", killData.MostExpensiveAttackerShip.EnglishName));
                 }
                 fields.Add(new EmbedField("Number of attackers", killData.AttackerCount.ToString()));
-
             }
 
             if (package.zkb != null)
@@ -306,7 +311,7 @@ namespace Sniffer.KillBoard
             await _channelAPI.CreateMessageAsync(channel.ID, embeds: new[] { embed });
         }
 
-        private Task SendFallbackMessage(Snowflake channel, Package package)
+        private Task SendFallbackMessage(FeedbackService feedbackService, Snowflake channel, Package package)
         {
             var embed = new Embed
             {
@@ -316,7 +321,7 @@ namespace Sniffer.KillBoard
                 Timestamp = package.killmail.killmail_time,
             };
 
-            return _feedbackService.SendEmbedAsync(channel, embed);
+            return feedbackService.SendEmbedAsync(channel, embed);
         }
 
         private static string MakeShipMarkdown(CharacterData victim, CorporationData corp, AllianceData alliance, TypeID ship)
