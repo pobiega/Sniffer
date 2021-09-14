@@ -8,21 +8,23 @@ using Remora.Extensions.Options.Immutable;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Remora.Discord.Hosting.Services;
 using Microsoft.Extensions.Hosting;
+using System;
 
 namespace Sniffer.Bot
 {
     public static class DependencyInjectionExtensions
     {
-        public static void AddDiscordBot(this IServiceCollection services)
+        public static IServiceCollection AddDiscordBot(this IServiceCollection services, Action<DiscordBotSettings> setupAction)
         {
-            var token = "ODQzOTQyMTIyNDUzMjA1MDMz.YKLMWQ.5NPYflKG54akg__NR1S91CVGhLM";
+            var settings = new DiscordBotSettings();
+            setupAction?.Invoke(settings);
 
             services.AddHttpClient();
 
             services.Configure(() => new DiscordServiceOptions());
 
             services
-                .AddDiscordGateway(_ => token)
+                .AddDiscordGateway(_ => settings.DiscordToken)
                 .AddDiscordCommands()
                 .AddCommandGroup<SnifferCommandGroup>();
 
@@ -31,6 +33,7 @@ namespace Sniffer.Bot
             services.AddSingleton<IHostedService, DiscordService>(serviceProvider =>
                 serviceProvider.GetRequiredService<DiscordService>());
 
+            return services;
         }
     }
 }

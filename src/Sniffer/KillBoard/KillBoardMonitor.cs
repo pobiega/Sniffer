@@ -1,26 +1,27 @@
-﻿using Microsoft.Extensions.Options;
-using Serilog;
-using Sniffer.KillBoard.ZKill;
-using Sniffer.Persistance;
-using System;
-using System.Threading.Tasks;
+﻿using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
-using Sniffer.Static;
-using Sniffer.Data;
-using System.Text;
-using Sniffer.Data.ESI.Models;
-using System.Collections.Generic;
-using Sniffer.Static.Models;
-using Remora.Discord.API.Abstractions.Rest;
-using Remora.Discord.API.Abstractions.Objects;
-using Remora.Discord.API.Objects;
-using Sniffer.Persistance.Model;
+using Microsoft.Extensions.Options;
 using MoreLinq;
-using System.Linq;
+using Remora.Discord.API.Abstractions.Objects;
+using Remora.Discord.API.Abstractions.Rest;
+using Remora.Discord.API.Objects;
+using Remora.Discord.Commands.Feedback.Services;
 using Remora.Discord.Core;
 using Remora.Results;
+using Serilog;
+using Sniffer.Data;
+using Sniffer.Data.ESI.Models;
 using Sniffer.KillBoard.Errors;
-using Humanizer;
+using Sniffer.KillBoard.ZKill;
+using Sniffer.Persistance;
+using Sniffer.Persistance.Model;
+using Sniffer.Static;
+using Sniffer.Static.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Sniffer.KillBoard
 {
@@ -35,6 +36,7 @@ namespace Sniffer.KillBoard
         private readonly IServiceProvider _serviceProvider;
         private readonly IESIClient _esiClient;
         private readonly IDiscordRestChannelAPI _channelAPI;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public KillBoardMonitor(
             ILogger logger,
@@ -42,7 +44,8 @@ namespace Sniffer.KillBoard
             IServiceProvider serviceProvider,
             IZKillProcessingService zKillProcessingService,
             IESIClient esiClient,
-            IDiscordRestChannelAPI channelAPI
+            IDiscordRestChannelAPI channelAPI,
+            IServiceScopeFactory serviceScopeFactory
             )
         {
             _logger = logger;
@@ -51,6 +54,7 @@ namespace Sniffer.KillBoard
             _serviceProvider = serviceProvider;
             _esiClient = esiClient;
             _channelAPI = channelAPI;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         public Task Initialize()
@@ -87,12 +91,10 @@ namespace Sniffer.KillBoard
             }
 
             List<ChannelRange> channelRanges = new();
+            var killType = GetKillTypeForPackage(e.Package);
 
-            // TODO: send a message to discord, if the message matches our criteria.
             foreach (var channelSettings in _monitorSettings)
             {
-                var killType = GetKillTypeForPackage(e.Package);
-
                 if (channelSettings.Value.killType != KillType.All && channelSettings.Value.killType != killType)
                 {
                     continue;
@@ -114,31 +116,43 @@ namespace Sniffer.KillBoard
                 }
 
                 channelRanges.Add(new ChannelRange(channelSettings.Key, channelSettings.Value, actualRange));
+            }
 
-                if (channelRanges.Count > 0)
+            if (channelRanges.Count <= 0)
+            {
+                return;
+            }
+
+            KillData killData = null;
+
+            try
+            {
+                killData = await GetKillDataFromPackage(e.Package);
+            }
+            catch (Exception)
+            {
+                using var scope = _serviceScopeFactory.CreateScope();
+
+                var feedbackService = scope.ServiceProvider.GetRequiredService<FeedbackService>();
+
+                var tasks = new List<Task>();
+                foreach (var channelRange in channelRanges)
                 {
-                    KillData killData = null;
+                    var channel = new Snowflake(channelRange.ChannelKey);
+                    tasks.Add(SendFallbackMessage(feedbackService, channel, e.Package));
+                }
+                await Task.WhenAll(tasks);
 
-                    try
-                    {
-                        killData = await GetKillDataFromPackage(e.Package);
-                    }
-                    catch (Exception)
-                    {
-                        //TODO: Send Fallback message with link to zkb.
-                        return;
-                    }
+                return;
+            }
 
-                    foreach (var channelRange in channelRanges)
-                    {
-                        var channel = await _channelAPI.GetChannelAsync(new Remora.Discord.Core.Snowflake(channelRange.ChannelKey));
+            foreach (var channelRange in channelRanges)
+            {
+                var channel = await _channelAPI.GetChannelAsync(new Snowflake(channelRange.ChannelKey));
 
-                        // alert the channel
-                        if (channel.IsSuccess && channel.Entity.Type == ChannelType.GuildText)
-                        {
-                            await SendKillMessage(channel.Entity, e.Package, killData, channelRange.Range, channelRange.Value);
-                        }
-                    }
+                if (channel.IsSuccess && channel.Entity.Type == ChannelType.GuildText)
+                {
+                    await SendKillMessage(channel.Entity, e.Package, killData, channelRange.Range, channelRange.Value);
                 }
             }
         }
@@ -161,6 +175,7 @@ namespace Sniffer.KillBoard
             var victimAllianceTask = kmVictim.alliance_id != default
                 ? _esiClient.GetAllianceDataAsync(kmVictim.alliance_id)
                 : Task.FromResult<AllianceData>(null);
+
             var killLocation = EveStaticDataProvider.Instance.SystemIds[package.killmail.solar_system_id];
 
             TypeID victimShip;
@@ -236,12 +251,12 @@ namespace Sniffer.KillBoard
                 fields.Add(new EmbedField("Victim", MakeShipMarkdown(killData.Victim, killData.VictimCorp, killData.VictimAlliance, killData.VicimShip)));
             }
 
-            var killerText = killData.AttackerCount > 1
+            if (killData.Killer != null)
+            {
+                var killerText = killData.AttackerCount > 1
                 ? "Most damage done by"
                 : "Solo killed by";
 
-            if (killData.Killer != null)
-            {
                 fields.Add(new EmbedField(killerText, MakeShipMarkdown(killData.Killer, killData.KillerCorp, killData.KillerAlliance, killData.KillerShip)));
             }
 
@@ -252,7 +267,6 @@ namespace Sniffer.KillBoard
                     fields.Add(new EmbedField("Most expensive attacker ship", killData.MostExpensiveAttackerShip.EnglishName));
                 }
                 fields.Add(new EmbedField("Number of attackers", killData.AttackerCount.ToString()));
-
             }
 
             if (package.zkb != null)
@@ -290,12 +304,24 @@ namespace Sniffer.KillBoard
 
             var embed = new Embed
             {
-                Url = package.zkb.href,
                 Timestamp = package.killmail.killmail_time,
                 Fields = fields
             };
 
             await _channelAPI.CreateMessageAsync(channel.ID, embeds: new[] { embed });
+        }
+
+        private Task SendFallbackMessage(FeedbackService feedbackService, Snowflake channel, Package package)
+        {
+            var embed = new Embed
+            {
+                Title = "Failed to get kill information, linking to ZKB",
+                Type = EmbedType.Link,
+                Url = $"https://zkillboard.com/kill/{package.killID}/",
+                Timestamp = package.killmail.killmail_time,
+            };
+
+            return feedbackService.SendEmbedAsync(channel, embed);
         }
 
         private static string MakeShipMarkdown(CharacterData victim, CorporationData corp, AllianceData alliance, TypeID ship)
@@ -329,8 +355,6 @@ namespace Sniffer.KillBoard
 
         public async Task<Result<string>> TrySetChannelSettings(Snowflake channelID, int radius, string text, Persistance.Model.KillType killType)
         {
-            // TODO: revisit this.
-
             var channel = await _channelAPI.GetChannelAsync(channelID);
 
             if (!channel.IsSuccess)

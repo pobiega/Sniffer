@@ -44,7 +44,7 @@ namespace Sniffer
             services.AddSingleton<IESIClient, CachingESIClient>();
 
             services.AddZKillService();
-            services.AddDiscordBot();
+            services.AddDiscordBot(o => Configuration.GetSection(nameof(DiscordBotSettings)).Bind(o));
             services.AddHostedService<AppService>();
         }
     }
