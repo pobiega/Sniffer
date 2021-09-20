@@ -33,6 +33,29 @@ namespace Sniffer.Bot.Commands
         }
 
         [Command("sniff")]
+        public async Task<IResult> SniffHelpInvokeAsync(string extendedTrigger = null)
+        {
+            const string SHORT_USAGE = "Usage: !sniff <radius> <system> [All/Player/NPC]";
+            const string LONG_USAGE = SHORT_USAGE + @"
+
+<radius> is the number of jumps to monitor. **Not** optional. Can be 0.
+
+<system> is the system name the radius originates from. **Not** optional. Must be quoted if it contains spaces.
+
+Last argument is optional and lets you filter specifically for player kills, NPC kills or both(default). Optional.";
+
+            var message = extendedTrigger?.Equals("help", System.StringComparison.OrdinalIgnoreCase) ?? false
+                ? LONG_USAGE
+                : SHORT_USAGE;
+
+            var announce = await _feedbackService.SendContextualInfoAsync(message);
+
+            return !announce.IsSuccess
+                ? Result.FromError(announce)
+                : Result.FromSuccess();
+        }
+
+        [Command("sniff")]
         public async Task<IResult> SniffInvokeAsync(int radius, string text, KillType killType = KillType.All)
         {
             if (radius < 0)
